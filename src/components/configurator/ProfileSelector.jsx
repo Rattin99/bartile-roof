@@ -8,7 +8,7 @@ const PROFILES = [
     name: 'Legendary Slate',
     category: 'Slate',
     description: 'Creates the look and feel of real slate at a fraction of the price. Class A fire rating with 75-year warranty.',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80',
+    image: '/tiles/legendary.jpeg',
     features: ['75-Year Warranty', 'Class A Fire Rating', 'No Battens Required']
   },
   {
@@ -16,7 +16,7 @@ const PROFILES = [
     name: 'New England Slate',
     category: 'Slate',
     description: 'Recreates the look of hand hewn slate with beveled edges and smaller size for a classic aesthetic.',
-    image: 'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?w=600&q=80',
+    image: '/tiles/new_england.jpeg',
     features: ['Hand Hewn Look', 'Beveled Edges', 'Turret Tile Option']
   },
   {
@@ -24,7 +24,7 @@ const PROFILES = [
     name: 'Legendary Split Timber',
     category: 'Split Timber',
     description: 'The look and feel of wood shake and shingles with superior durability and fire resistance.',
-    image: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&q=80',
+    image: '/tiles/legendary_split_timber.jpeg',
     features: ['Wood Shake Look', '75-Year Warranty', 'Class A Fire Rating']
   },
   {
@@ -32,7 +32,7 @@ const PROFILES = [
     name: 'Split Timber',
     category: 'Split Timber',
     description: 'Natural appeal of wood recreated in rich rustic style with Class A fire rating.',
-    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=600&q=80',
+    image: '/tiles/split_timber.jpeg',
     features: ['Rustic Charm', 'Class A Fire Rating', 'Versatile Design']
   },
   {
@@ -40,7 +40,7 @@ const PROFILES = [
     name: 'Sierra Mission',
     category: 'Mission',
     description: 'High barrel design adds texture and richer shadowing for Spanish and Mediterranean styles.',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=600&q=80',
+    image: '/tiles/sierra_mission.jpeg',
     features: ['High Barrel Design', 'Rich Shadowing', 'Lifetime Durability']
   },
   {
@@ -48,7 +48,7 @@ const PROFILES = [
     name: 'European',
     category: 'Mediterranean',
     description: 'Smooth double-barrel contour creates distinctive shadows replicating old country tile.',
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&q=80',
+    image: '/tiles/european.jpeg',
     features: ['Double Barrel', 'Mediterranean Style', 'Distinctive Shadows']
   },
   {
@@ -56,7 +56,7 @@ const PROFILES = [
     name: 'Yorkshire Slate',
     category: 'Yorkshire',
     description: 'Rough hand hewn slate look with four different widths for unparalleled texture.',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80',
+    image: '/tiles/yorkshire.jpeg',
     features: ['Hand Crafted Look', 'Variable Widths', 'Unique Texture']
   },
   {
@@ -64,7 +64,7 @@ const PROFILES = [
     name: 'Yorkshire Split Timber',
     category: 'Yorkshire',
     description: 'Hand split wood shake look with varied widths and lengths for cottage-style beauty.',
-    image: 'https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=600&q=80',
+    image: '/tiles/yorkshire.jpeg',
     features: ['Cottage Style', 'Variable Sizes', 'Authentic Texture']
   }
 ];

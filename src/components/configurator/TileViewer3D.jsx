@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { RotateCcw, Maximize2, Move } from 'lucide-react';
 
 // Create different tile geometries based on profile
@@ -8,7 +9,6 @@ const createTileGeometry = (profileId) => {
   
   switch (profileId) {
     case 'legendary-slate':
-    case 'new-england-slate':
     case 'yorkshire-slate':
       // Slate tiles - flat with beveled edges
       const slateShape = new THREE.Shape();
@@ -326,25 +326,87 @@ export default function TileViewer3D({ config }) {
     // Remove old tile
     if (tileRef.current) {
       sceneRef.current.remove(tileRef.current);
+      // specific cleanup for meshes/geometries if needed
+      tileRef.current = null;
     }
 
-    // Create new tile
-    const tileGroup = createTileGeometry(config.profile.id);
-    tileGroup.position.set(-0.6, 0, -0.9);
-    tileGroup.castShadow = true;
-    tileGroup.receiveShadow = true;
+    const loadAndSetupTile = async () => {
+      let tileGroup;
 
-    // Apply color and texture to all meshes
-    tileGroup.traverse((child) => {
-      if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-        applyTexture(child.material, config.texture?.id || 'standard', config.color?.hex || '#666666');
-        child.castShadow = true;
-        child.receiveShadow = true;
+      if (config.profile.id === 'new-england-slate') {
+        const loader = new STLLoader();
+        try {
+          const geometry = await new Promise((resolve, reject) => {
+            loader.load(
+              '/new_england_slate.STL',
+              resolve,
+              undefined,
+              reject
+            );
+          });
+
+          // Center the geometry
+          geometry.center();
+
+          // Compute bounding box to normalize scale
+          geometry.computeBoundingBox();
+          const bbox = geometry.boundingBox;
+          const size = new THREE.Vector3();
+          bbox.getSize(size);
+          
+          // Determine scale factor to fit within a ~1.8 unit box (matching other tiles)
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const targetSize = 1.8;
+          const scale = targetSize / maxDim;
+          
+          // Create mesh
+          const material = new THREE.MeshStandardMaterial();
+          const mesh = new THREE.Mesh(geometry, material);
+          
+          // Apply normalized scale
+          mesh.scale.set(scale, scale, scale); 
+          
+          // Rotate if needed (STL often comes in with different axis orientation)
+          // Adjust rotation based on visual inspection. 
+          // If Y is up in STL, and Z is depth here...
+          mesh.rotation.x = -Math.PI / 2;
+
+          tileGroup = new THREE.Group();
+          tileGroup.add(mesh);
+        } catch (error) {
+          console.error('Error loading STL:', error);
+          // Fallback to procedural if STL fails
+          tileGroup = createTileGeometry(config.profile.id);
+        }
+      } else {
+        tileGroup = createTileGeometry(config.profile.id);
       }
-    });
 
-    sceneRef.current.add(tileGroup);
-    tileRef.current = tileGroup;
+      if (tileGroup) {
+        tileGroup.position.set(0, 0, 0); // Centered on platform
+        tileGroup.castShadow = true;
+        tileGroup.receiveShadow = true;
+
+        // Apply color and texture to all meshes
+        tileGroup.traverse((child) => {
+          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
+            applyTexture(child.material, config.texture?.id || 'standard', config.color?.hex || '#666666');
+            child.castShadow = true;
+            child.receiveShadow = true;
+            // Ensure double-sided rendering for open meshes
+            child.material.side = THREE.DoubleSide;
+          }
+        });
+
+        if (sceneRef.current) {
+           sceneRef.current.add(tileGroup);
+           tileRef.current = tileGroup;
+        }
+      }
+    };
+
+    loadAndSetupTile();
+
   }, [config.profile, config.color, config.texture]);
 
   const resetView = () => {

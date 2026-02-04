@@ -14,6 +14,16 @@ import { Badge } from '@/components/ui/badge';
 
 const CATEGORIES = ['Slate', 'Split Timber', 'Mission', 'Mediterranean', 'Yorkshire'];
 
+const TILE_IMAGES = [
+  { name: 'Legendary Slate', path: '/tiles/legendary.jpeg' },
+  { name: 'New England Slate', path: '/tiles/new_england.jpeg' },
+  { name: 'Legendary Split Timber', path: '/tiles/legendary_split_timber.jpeg' },
+  { name: 'Split Timber', path: '/tiles/split_timber.jpeg' },
+  { name: 'Sierra Mission', path: '/tiles/sierra_mission.jpeg' },
+  { name: 'European', path: '/tiles/european.jpeg' },
+  { name: 'Yorkshire', path: '/tiles/yorkshire.jpeg' },
+];
+
 export default function AdminProfiles() {
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState([]);
@@ -156,13 +166,49 @@ export default function AdminProfiles() {
                 <p className="text-sm text-white/40">Manage tile profiles and categories</p>
               </div>
             </div>
-            <Button
-              onClick={handleNew}
-              className="bg-[#c9a962] hover:bg-[#b89952] text-[#0f0f0f]"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Profile
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  if (!confirm('This will attempt to match existing profiles to local images. Continue?')) return;
+                  setLoading(true);
+                  try {
+                    for (const profile of profiles) {
+                      let imageUrl = '';
+                      const name = profile.name.toLowerCase();
+                      if (name.includes('legendary') && name.includes('slate')) imageUrl = '/tiles/legendary.jpeg';
+                      else if (name.includes('new england')) imageUrl = '/tiles/new_england.jpeg';
+                      else if (name.includes('legendary') && name.includes('split timber')) imageUrl = '/tiles/legendary_split_timber.jpeg';
+                      else if (name.includes('split timber')) imageUrl = '/tiles/split_timber.jpeg';
+                      else if (name.includes('mission') || name.includes('sierra')) imageUrl = '/tiles/sierra_mission.jpeg';
+                      else if (name.includes('european') || name.includes('mediterranean')) imageUrl = '/tiles/european.jpeg';
+                      else if (name.includes('yorkshire')) imageUrl = '/tiles/yorkshire.jpeg';
+
+                      if (imageUrl && profile.image_url !== imageUrl) {
+                        await base44.entities.TileProfile.update(profile.id, { image_url: imageUrl });
+                      }
+                    }
+                    await loadProfiles();
+                    alert('Images updated successfully');
+                  } catch (error) {
+                    console.error('Bulk update failed:', error);
+                    alert('Bulk update failed');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="bg-white/5 border-white/10 text-white hover:bg-white/10"
+              >
+                Auto-fix Images
+              </Button>
+              <Button
+                onClick={handleNew}
+                className="bg-[#c9a962] hover:bg-[#b89952] text-[#0f0f0f]"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Profile
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -284,12 +330,30 @@ export default function AdminProfiles() {
 
             <div>
               <Label>Image URL</Label>
-              <Input
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://..."
-                className="bg-white/5 border-white/10 text-white"
-              />
+              <div className="flex gap-2 mb-2">
+                <Input
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="https://... or /tiles/..."
+                  className="bg-white/5 border-white/10 text-white flex-1"
+                />
+              </div>
+              <div className="grid grid-cols-4 gap-2 mt-2">
+                {TILE_IMAGES.map((img) => (
+                  <button
+                    key={img.path}
+                    onClick={() => setFormData({ ...formData, image_url: img.path })}
+                    className={`relative aspect-video rounded-md overflow-hidden border-2 transition-all ${
+                      formData.image_url === img.path ? 'border-[#c9a962]' : 'border-transparent hover:border-white/20'
+                    }`}
+                  >
+                    <img src={img.path} alt={img.name} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-end p-1">
+                      <span className="text-[8px] text-white truncate">{img.name}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div>
