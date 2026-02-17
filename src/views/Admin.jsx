@@ -8,8 +8,6 @@ import {
   Sparkles, 
   Home as HomeIcon, 
   FileText,
-  Users,
-  Settings,
   ArrowRight,
   TrendingUp
 } from 'lucide-react';
@@ -84,7 +82,7 @@ export default function Admin() {
         return;
       }
       setUser(currentUser);
-    } catch (error) {
+    } catch {
       base44.auth.redirectToLogin();
     } finally {
       setLoading(false);

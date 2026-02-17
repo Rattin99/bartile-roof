@@ -1,6 +1,7 @@
+'use client';
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Maximize2, ZoomIn, ZoomOut, RotateCw, Home, Box, Image as ImageIcon } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCw, Home, Box, Image as ImageIcon } from 'lucide-react';
 import TileViewer3D from './TileViewer3D';
 
 const HOUSE_IMAGES = [

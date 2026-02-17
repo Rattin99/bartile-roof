@@ -1,6 +1,7 @@
+'use client';
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, ChevronRight } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 const PROFILES = [
   {
@@ -83,7 +84,7 @@ export default function ProfileSelector({ config, updateConfig }) {
       <div className="mb-8">
         <h2 className="text-2xl sm:text-3xl font-light mb-2">Select Your Profile</h2>
         <p className="text-white/50 text-sm sm:text-base">
-          Choose the tile style that best complements your home's architecture
+          Choose the tile style that best complements your home&apos;s architecture
         </p>
       </div>
 

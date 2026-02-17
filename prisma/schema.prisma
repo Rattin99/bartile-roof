@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// -- Configuration Entities --
+
+model TileProfile {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  model_asset_path String?
+  icon_asset_path  String?
+  sort_order       Int      @default(0)
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  housePreviews HousePreview[]
+}
+
+model TileColor {
+  id          String   @id @default(uuid())
+  name        String
+  hex_code    String
+  is_standard Boolean  @default(true)
+  sort_order  Int      @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  housePreviews HousePreview[]
+}
+
+model TileTexture {
+  id                   String   @id @default(uuid())
+  name                 String
+  map_asset_path       String?
+  thumbnail_asset_path String?
+  sort_order           Int      @default(0)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  housePreviews HousePreview[]
+}
+
+model LayoutOption {
+  id                   String   @id @default(uuid())
+  name                 String
+  thumbnail_asset_path String?
+  sort_order           Int      @default(0)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+}
+
+// -- Visualizer Entities --
+
+model HousePreview {
+  id         String   @id @default(uuid())
+  image_url  String
+  tags       String[]
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  profile_id String?
+  profile    TileProfile? @relation(fields: [profile_id], references: [id])
+
+  color_id String?
+  color    TileColor? @relation(fields: [color_id], references: [id])
+
+  texture_id String?
+  texture    TileTexture? @relation(fields: [texture_id], references: [id])
+}
+
+// -- Business Entities --
+
+model QuoteRequest {
+  id                     String   @id @default(uuid())
+  contact_name           String
+  contact_email          String
+  contact_phone          String?
+  project_address        String?
+  estimated_squares      Float?
+  plan_file_path         String?
+  configuration_snapshot Json? // Stores the specific profile/color/texture choice
+  status                 String   @default("NEW") // NEW, PROCESSING, COMPLETED, ARCHIVED
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+}

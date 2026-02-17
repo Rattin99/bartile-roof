@@ -1,10 +1,10 @@
+'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ChevronRight, RotateCcw, Send, Menu, X, Check, Info, ChevronDown, Settings } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { ChevronRight, RotateCcw, Send, Menu, X, Check, Settings } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+// import { createPageUrl } from '@/utils'; // access via nextjs routes directly
 import { base44 } from '@/api/base44Client';
 import ProfileSelector from '@/components/configurator/ProfileSelector';
 import ColorPicker from '@/components/configurator/ColorPicker';
@@ -23,7 +23,7 @@ const STEPS = [
 ];
 
 export default function TileConfigurator() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -133,24 +133,32 @@ export default function TileConfigurator() {
 
             {/* Desktop Progress */}
             <div className="hidden lg:flex items-center gap-1">
-              {STEPS.map((step, index) => (
-                <button
-                  key={step.id}
-                  onClick={() => index <= currentStep && setCurrentStep(index)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
-                    index === currentStep 
-                      ? 'bg-white text-[#0f0f0f]' 
-                      : index < currentStep 
-                        ? 'bg-white/10 text-white hover:bg-white/20' 
-                        : 'text-white/30 cursor-not-allowed'
-                  }`}
-                  disabled={index > currentStep}
-                >
-                  <span className="text-xs font-medium">{step.icon}</span>
-                  <span className="text-sm font-medium">{step.label}</span>
-                  {index < currentStep && <Check className="w-3 h-3" />}
-                </button>
-              ))}
+              {STEPS.map((step, index) => {
+                const isAccessible = index === 0 || 
+                  (index === 1 && config.profile) ||
+                  (index === 2 && config.profile && config.color) ||
+                  (index === 3 && config.profile && config.color && config.texture) ||
+                  (index === 4 && config.profile && config.color && config.texture);
+                
+                return (
+                  <button
+                    key={step.id}
+                    onClick={() => isAccessible && setCurrentStep(index)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                      index === currentStep 
+                        ? 'bg-white text-[#0f0f0f]' 
+                        : isAccessible
+                          ? 'bg-white/10 text-white hover:bg-white/20' 
+                          : 'text-white/30 cursor-not-allowed'
+                    }`}
+                    disabled={!isAccessible}
+                  >
+                    <span className="text-xs font-medium">{step.icon}</span>
+                    <span className="text-sm font-medium">{step.label}</span>
+                    {isAccessible && index !== currentStep && <Check className="w-3 h-3" />}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Mobile Menu Button */}
@@ -165,7 +173,7 @@ export default function TileConfigurator() {
             <div className="hidden lg:flex items-center gap-3">
               {isAdmin && (
                 <Button
-                  onClick={() => navigate(createPageUrl('Admin'))}
+                  onClick={() => router.push('/admin')}
                   variant="ghost"
                   className="text-white/60 hover:text-white"
                 >
@@ -219,31 +227,39 @@ export default function TileConfigurator() {
           >
             <div className="px-6 py-8">
               <div className="space-y-2 mb-8">
-                {STEPS.map((step, index) => (
-                  <button
-                    key={step.id}
-                    onClick={() => {
-                      if (index <= currentStep) {
-                        setCurrentStep(index);
-                        setMobileMenuOpen(false);
-                      }
-                    }}
-                    className={`w-full flex items-center justify-between p-4 rounded-xl transition-all ${
-                      index === currentStep 
-                        ? 'bg-white text-[#0f0f0f]' 
-                        : index < currentStep 
-                          ? 'bg-white/10 text-white' 
-                          : 'bg-white/5 text-white/30'
-                    }`}
-                    disabled={index > currentStep}
-                  >
-                    <div className="flex items-center gap-4">
-                      <span className="text-lg font-light">{step.icon}</span>
-                      <span className="font-medium">{step.label}</span>
-                    </div>
-                    {index < currentStep && <Check className="w-5 h-5" />}
-                  </button>
-                ))}
+                {STEPS.map((step, index) => {
+                  const isAccessible = index === 0 || 
+                    (index === 1 && config.profile) ||
+                    (index === 2 && config.profile && config.color) ||
+                    (index === 3 && config.profile && config.color && config.texture) ||
+                    (index === 4 && config.profile && config.color && config.texture);
+                  
+                  return (
+                    <button
+                      key={step.id}
+                      onClick={() => {
+                        if (isAccessible) {
+                          setCurrentStep(index);
+                          setMobileMenuOpen(false);
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between p-4 rounded-xl transition-all ${
+                        index === currentStep 
+                          ? 'bg-white text-[#0f0f0f]' 
+                          : isAccessible
+                            ? 'bg-white/10 text-white' 
+                            : 'bg-white/5 text-white/30'
+                      }`}
+                      disabled={!isAccessible}
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="text-lg font-light">{step.icon}</span>
+                        <span className="font-medium">{step.label}</span>
+                      </div>
+                      {isAccessible && index !== currentStep && <Check className="w-5 h-5" />}
+                    </button>
+                  );
+                })}
               </div>
               <div className="space-y-3">
                 <button 
@@ -282,20 +298,8 @@ export default function TileConfigurator() {
         {/* Configuration Panel */}
         <div className="w-full lg:w-[520px] xl:w-[580px] flex-shrink-0 order-2 lg:order-1">
           <div className="p-4 sm:p-6 lg:p-8 xl:p-10">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentStep}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-              >
-                {renderStepContent()}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/10">
+            {/* Navigation - Top */}
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
               <button
                 onClick={prevStep}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
@@ -332,6 +336,18 @@ export default function TileConfigurator() {
                 </Button>
               )}
             </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentStep}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {renderStepContent()}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>

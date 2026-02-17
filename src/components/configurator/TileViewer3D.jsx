@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
@@ -9,7 +10,7 @@ const createTileGeometry = (profileId) => {
   
   switch (profileId) {
     case 'legendary-slate':
-    case 'yorkshire-slate':
+    case 'yorkshire-slate': {
       // Slate tiles - flat with beveled edges
       const slateShape = new THREE.Shape();
       slateShape.moveTo(0, 0);
@@ -33,10 +34,11 @@ const createTileGeometry = (profileId) => {
       );
       geometry.add(slateMesh);
       break;
+    }
       
     case 'legendary-split-timber':
     case 'split-timber':
-    case 'yorkshire-split-timber':
+    case 'yorkshire-split-timber': {
       // Wood shake - textured with splits
       const shakeBase = new THREE.BoxGeometry(1.2, 1.8, 0.12);
       const shakeMesh = new THREE.Mesh(
@@ -56,8 +58,9 @@ const createTileGeometry = (profileId) => {
       
       geometry.add(shakeMesh);
       break;
+    }
       
-    case 'sierra-mission':
+    case 'sierra-mission': {
       // Mission tile - high barrel S-curve
       const missionCurve = new THREE.CatmullRomCurve3([
         new THREE.Vector3(0, 0, 0),
@@ -85,8 +88,9 @@ const createTileGeometry = (profileId) => {
       missionMesh.rotation.x = Math.PI / 2;
       geometry.add(missionMesh);
       break;
+    }
       
-    case 'european':
+    case 'european': {
       // European - double barrel
       const euro1Curve = new THREE.QuadraticBezierCurve3(
         new THREE.Vector3(0, 0, 0),
@@ -120,14 +124,16 @@ const createTileGeometry = (profileId) => {
       euroMesh.rotation.x = Math.PI / 2;
       geometry.add(euroMesh);
       break;
+    }
       
-    default:
+    default: {
       // Default flat tile
       const defaultMesh = new THREE.Mesh(
         new THREE.BoxGeometry(1.2, 1.8, 0.1),
         new THREE.MeshStandardMaterial()
       );
       geometry.add(defaultMesh);
+    }
   }
   
   return geometry;

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Plus, Edit, Trash2, ArrowLeft, Save, X, Upload, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save, X, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

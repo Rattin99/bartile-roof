@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Check, ChevronDown } from 'lucide-react';
+'use client';
+import React from 'react';
+import { Check } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
@@ -45,7 +45,7 @@ const TRIM_OPTIONS = {
   ]
 };
 
-function OptionGroup({ title, options, selectedId, onChange }) {
+function OptionGroup({ options, selectedId, onChange }) {
   return (
     <div className="space-y-2">
       {options.map((option) => {
