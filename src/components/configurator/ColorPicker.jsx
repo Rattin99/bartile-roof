@@ -1,44 +1,55 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Search } from 'lucide-react';
 import { Input } from "@/components/ui/input";
+import { base44 } from '@/api/base44Client';
 
-const COLORS = [
-  { id: '33', name: 'Charcoal', hex: '#3d3d3d', category: 'Dark' },
-  { id: '35', name: 'Slate Gray', hex: '#5a5a5a', category: 'Dark' },
-  { id: '162', name: 'Storm', hex: '#4a4f54', category: 'Dark' },
-  { id: '202', name: 'Weathered Bronze', hex: '#6b5b4f', category: 'Brown' },
-  { id: '415', name: 'Desert Sand', hex: '#c4a882', category: 'Tan' },
-  { id: '613', name: 'Terracotta', hex: '#b35c3a', category: 'Red' },
-  { id: '629', name: 'Autumn Rust', hex: '#8b4513', category: 'Red' },
-  { id: '695', name: 'Forest Green', hex: '#4a5d4a', category: 'Green' },
-  { id: '720', name: 'Ocean Blue', hex: '#4a5a6b', category: 'Blue' },
-  { id: '801', name: 'Vintage Brown', hex: '#5d4e42', category: 'Brown' },
-  { id: '855', name: 'Adobe Clay', hex: '#8b6b5a', category: 'Brown' },
-  { id: '902', name: 'Midnight Black', hex: '#1a1a1a', category: 'Dark' },
-  { id: '945', name: 'Pewter', hex: '#8a8a8a', category: 'Gray' },
-  { id: '978', name: 'Silver Mist', hex: '#9ca3af', category: 'Gray' },
-  { id: '1001', name: 'Sandstone', hex: '#d4c4a8', category: 'Tan' },
-  { id: '1045', name: 'Burnt Sienna', hex: '#a0522d', category: 'Red' },
-  { id: '1102', name: 'Sage', hex: '#7d8471', category: 'Green' },
-  { id: '1156', name: 'Copper', hex: '#b87333', category: 'Brown' },
-  { id: '1203', name: 'Natural Clay', hex: '#c9b896', category: 'Tan' },
-  { id: '1287', name: 'Deep Walnut', hex: '#4a3728', category: 'Brown' },
-];
-
-const categories = ['All', 'Dark', 'Gray', 'Brown', 'Tan', 'Red', 'Green', 'Blue'];
+const CATEGORIES = ['All', 'Dark', 'Gray', 'Brown', 'Tan', 'Red', 'Green', 'Blue'];
 
 export default function ColorPicker({ config, updateConfig }) {
+  const [colors, setColors] = useState([]);
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const filteredColors = COLORS.filter(color => {
-    const matchesCategory = activeCategory === 'All' || color.category === activeCategory;
+  useEffect(() => {
+    async function fetchColors() {
+      try {
+        const data = await base44.entities.TileColor.list('sort_order');
+        setColors(data);
+      } catch (error) {
+        console.error('Failed to fetch colors:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchColors();
+  }, []);
+
+  const filteredColors = colors.filter(color => {
+    // Basic category mapping if not present in DB
+    const cat = color.name.includes('Charcoal') || color.name.includes('Black') || color.name.includes('Midnight') ? 'Dark' :
+                color.name.includes('Gray') || color.name.includes('Slate') || color.name.includes('Pewter') ? 'Gray' :
+                color.name.includes('Brown') || color.name.includes('Walnut') || color.name.includes('Bronze') ? 'Brown' :
+                color.name.includes('Tan') || color.name.includes('Sand') || color.name.includes('Clay') ? 'Tan' :
+                color.name.includes('Red') || color.name.includes('Terracotta') || color.name.includes('Rust') || color.name.includes('Sienna') ? 'Red' :
+                color.name.includes('Green') || color.name.includes('Sage') || color.name.includes('Forest') ? 'Green' :
+                color.name.includes('Blue') || color.name.includes('Ocean') ? 'Blue' : 'Other';
+
+    const matchesCategory = activeCategory === 'All' || cat === activeCategory;
     const matchesSearch = color.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          color.id.includes(searchQuery);
     return matchesCategory && matchesSearch;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin w-8 h-8 border-4 border-[#c9a962]/20 border-t-[#c9a962] rounded-full"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -63,7 +74,7 @@ export default function ColorPicker({ config, updateConfig }) {
 
       {/* Category Filter */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {categories.map(cat => (
+        {CATEGORIES.map(cat => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
@@ -98,7 +109,7 @@ export default function ColorPicker({ config, updateConfig }) {
                     ? 'ring-2 ring-[#c9a962] ring-offset-2 ring-offset-[#0f0f0f] scale-95' 
                     : 'hover:scale-95'
                 }`}
-                style={{ backgroundColor: color.hex }}
+                style={{ backgroundColor: color.hex_code }}
               >
                 {/* Texture Overlay */}
                 <div 
@@ -125,7 +136,7 @@ export default function ColorPicker({ config, updateConfig }) {
               {/* Label */}
               <div className="mt-2 text-center">
                 <p className="text-xs font-medium text-white/80 truncate">{color.name}</p>
-                <p className="text-[10px] text-white/40">#{color.id}</p>
+                <p className="text-[10px] text-white/40">#{color.id.slice(0, 4)}</p>
               </div>
             </motion.button>
           );
@@ -142,12 +153,12 @@ export default function ColorPicker({ config, updateConfig }) {
           <div className="flex items-center gap-4">
             <div 
               className="w-16 h-16 rounded-lg"
-              style={{ backgroundColor: config.color.hex }}
+              style={{ backgroundColor: config.color.hex_code }}
             />
             <div>
               <p className="text-white font-medium">{config.color.name}</p>
-              <p className="text-white/50 text-sm">Color Code: #{config.color.id}</p>
-              <p className="text-white/40 text-xs mt-1">Category: {config.color.category}</p>
+              <p className="text-white/50 text-sm">Color Code: {config.color.id.slice(0, 8)}</p>
+              <p className="text-white/40 text-xs mt-1">{config.color.is_standard ? 'Standard Collection' : 'Premium Color'}</p>
             </div>
           </div>
         </motion.div>

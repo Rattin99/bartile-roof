@@ -1,83 +1,62 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
-
-const PROFILES = [
-  {
-    id: 'legendary-slate',
-    name: 'Legendary Slate',
-    category: 'Slate',
-    description: 'Creates the look and feel of real slate at a fraction of the price. Class A fire rating with 75-year warranty.',
-    image: '/tiles/legendary.jpeg',
-    features: ['75-Year Warranty', 'Class A Fire Rating', 'No Battens Required']
-  },
-  {
-    id: 'new-england-slate',
-    name: 'New England Slate',
-    category: 'Slate',
-    description: 'Recreates the look of hand hewn slate with beveled edges and smaller size for a classic aesthetic.',
-    image: '/tiles/new_england.jpeg',
-    features: ['Hand Hewn Look', 'Beveled Edges', 'Turret Tile Option']
-  },
-  {
-    id: 'legendary-split-timber',
-    name: 'Legendary Split Timber',
-    category: 'Split Timber',
-    description: 'The look and feel of wood shake and shingles with superior durability and fire resistance.',
-    image: '/tiles/legendary_split_timber.jpeg',
-    features: ['Wood Shake Look', '75-Year Warranty', 'Class A Fire Rating']
-  },
-  {
-    id: 'split-timber',
-    name: 'Split Timber',
-    category: 'Split Timber',
-    description: 'Natural appeal of wood recreated in rich rustic style with Class A fire rating.',
-    image: '/tiles/split_timber.jpeg',
-    features: ['Rustic Charm', 'Class A Fire Rating', 'Versatile Design']
-  },
-  {
-    id: 'sierra-mission',
-    name: 'Sierra Mission',
-    category: 'Mission',
-    description: 'High barrel design adds texture and richer shadowing for Spanish and Mediterranean styles.',
-    image: '/tiles/sierra_mission.jpeg',
-    features: ['High Barrel Design', 'Rich Shadowing', 'Lifetime Durability']
-  },
-  {
-    id: 'european',
-    name: 'European',
-    category: 'Mediterranean',
-    description: 'Smooth double-barrel contour creates distinctive shadows replicating old country tile.',
-    image: '/tiles/european.jpeg',
-    features: ['Double Barrel', 'Mediterranean Style', 'Distinctive Shadows']
-  },
-  {
-    id: 'yorkshire-slate',
-    name: 'Yorkshire Slate',
-    category: 'Yorkshire',
-    description: 'Rough hand hewn slate look with four different widths for unparalleled texture.',
-    image: '/tiles/yorkshire.jpeg',
-    features: ['Hand Crafted Look', 'Variable Widths', 'Unique Texture']
-  },
-  {
-    id: 'yorkshire-split-timber',
-    name: 'Yorkshire Split Timber',
-    category: 'Yorkshire',
-    description: 'Hand split wood shake look with varied widths and lengths for cottage-style beauty.',
-    image: '/tiles/yorkshire.jpeg',
-    features: ['Cottage Style', 'Variable Sizes', 'Authentic Texture']
-  }
-];
-
-const categories = [...new Set(PROFILES.map(p => p.category))];
+import { base44 } from '@/api/base44Client';
 
 export default function ProfileSelector({ config, updateConfig }) {
-  const [activeCategory, setActiveCategory] = React.useState('all');
+  const [profiles, setProfiles] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchProfiles() {
+      try {
+        const data = await base44.entities.TileProfile.list('sort_order');
+        setProfiles(data);
+        
+        // Extract unique categories (assuming tags or a dedicated field, 
+        // but looking at schema TileProfile has name/description/assets. 
+        // We can use a naming convention or tags if we added them. 
+        // Let's assume tags for now or just group by name prefix if tags aren't there.)
+        // Actually, the previous hardcoded had categories like 'Slate', 'Split Timber'.
+        // Let's use a simple mapping or just "All Profiles" if no categories available.
+        
+        const cats = [...new Set(data.map(p => {
+          if (p.name.includes('Slate')) return 'Slate';
+          if (p.name.includes('Timber')) return 'Split Timber';
+          if (p.name.includes('Mission')) return 'Mission';
+          if (p.name.includes('European')) return 'Mediterranean';
+          return 'Other';
+        }))];
+        setCategories(cats);
+      } catch (error) {
+        console.error('Failed to fetch profiles:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchProfiles();
+  }, []);
 
   const filteredProfiles = activeCategory === 'all' 
-    ? PROFILES 
-    : PROFILES.filter(p => p.category === activeCategory);
+    ? profiles 
+    : profiles.filter(p => {
+        const cat = p.name.includes('Slate') ? 'Slate' :
+                   p.name.includes('Timber') ? 'Split Timber' :
+                   p.name.includes('Mission') ? 'Mission' :
+                   p.name.includes('European') ? 'Mediterranean' : 'Other';
+        return cat === activeCategory;
+      });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin w-8 h-8 border-4 border-[#c9a962]/20 border-t-[#c9a962] rounded-full"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -119,6 +98,10 @@ export default function ProfileSelector({ config, updateConfig }) {
       <div className="space-y-3">
         {filteredProfiles.map((profile, index) => {
           const isSelected = config.profile?.id === profile.id;
+          const category = profile.name.includes('Slate') ? 'Slate' :
+                          profile.name.includes('Timber') ? 'Split Timber' :
+                          profile.name.includes('Mission') ? 'Mission' :
+                          profile.name.includes('European') ? 'Mediterranean' : 'Standard';
           
           return (
             <motion.button
@@ -135,9 +118,9 @@ export default function ProfileSelector({ config, updateConfig }) {
             >
               <div className="flex items-stretch">
                 {/* Image */}
-                <div className="w-28 sm:w-36 h-28 sm:h-32 flex-shrink-0 overflow-hidden">
+                <div className="w-28 sm:w-36 h-28 sm:h-32 flex-shrink-0 overflow-hidden bg-white/5">
                   <img 
-                    src={profile.image} 
+                    src={profile.icon_asset_path || '/tiles/legendary.jpeg'} 
                     alt={profile.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
@@ -148,7 +131,7 @@ export default function ProfileSelector({ config, updateConfig }) {
                   <div className="flex items-start justify-between mb-1">
                     <div>
                       <span className="text-[10px] uppercase tracking-wider text-[#c9a962]">
-                        {profile.category}
+                        {category}
                       </span>
                       <h3 className="text-base sm:text-lg font-medium text-white">
                         {profile.name}
@@ -161,17 +144,15 @@ export default function ProfileSelector({ config, updateConfig }) {
                     )}
                   </div>
                   <p className="text-xs sm:text-sm text-white/50 line-clamp-2 mb-3">
-                    {profile.description}
+                    {profile.description || 'Premium concrete roof tile providing elegance and durability.'}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
-                    {profile.features.slice(0, 2).map(feature => (
-                      <span 
-                        key={feature}
-                        className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/60"
-                      >
-                        {feature}
-                      </span>
-                    ))}
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/60">
+                      75-Year Warranty
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/60">
+                      Class A Fire Rating
+                    </span>
                   </div>
                 </div>
               </div>

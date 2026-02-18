@@ -1,65 +1,63 @@
 # Project Roadmap: Bartile Roof Designer
 
-This document outlines the remaining tasks for both Frontend and Backend, based on the requirements from `Bartile Roof Designer Requirements.docx` and the current Next.js migration status.
+This document outlines the project status based on `Bartile Roof Designer Requirements.docx`.
 
-## 1. Frontend Tasks (User Experience)
+## ✅ Completed Tasks
 
-### **A. Layout Options with Thumbnails**
-*   **Requirement:** Show "Standard" vs "Cottage/Stagger" layout options with visual thumbnails.
-*   **Action:** 
-    *   Update `OptionSelector.jsx` to fetch dynamic `LayoutOption` entities from the API.
-    *   Implement thumbnail rendering for these options (replacing simple text buttons).
+### 1. Frontend (User Experience)
+*   **[x] Layout Options with Thumbnails:** 
+    *   `OptionSelector.jsx` now fetches `LayoutOption` entities.
+    *   Added support for thumbnail images in option buttons.
+*   **[x] Smart House Visualizer (Preview Panel):**
+    *   `PreviewPanel.jsx` queries `HousePreview` entities.
+    *   Implemented filtering logic to match Profile/Color/Texture.
+    *   Added "Simulated Preview" overlay when exact matches aren't found.
+*   **[x] 3D Viewer Refinement:**
+    *   Refined `TileViewer3D.jsx` with centered geometries.
+    *   Fixed horizontal rotation direction.
+    *   Added auto-rotate toggle with manual override.
+*   **[x] Dynamic Asset Loading:**
+    *   All selectors (`Profile`, `Color`, `Texture`) now use dynamic paths (`icon_asset_path`, `hex_code`, `thumbnail_asset_path`) from the API.
 
-### **B. Smart House Visualizer (Preview Panel)**
-*   **Requirement:** Display house photos that match the user's current selection (Tags matching). If no match exists, show "Photo not available".
-*   **Action:**
-    *   Update `PreviewPanel.jsx` to query `HousePreview` entities from the database.
-    *   Implement filtering logic to find a house image that matches the selected `profile_id`, `color_id`, and `texture_id`.
+### 2. Backend (Functionality)
+*   **[x] Real File Uploads:**
+    *   Implemented `/api/upload` route for handling multi-part form data.
+    *   Integrated file upload into the Quote Request modal.
+    *   Updated `base44Client` adapter to use the local upload endpoint.
+*   **[x] Quote Request Handling:**
+    *   Implemented `/api/entities/quoterequest` to save quotes to the database.
+    *   Added structure for email notifications (currently logging to console).
 
-### **C. 3D Viewer Refinement**
-*   **Requirement:** 
-    *   Center of mass alignment (fixing axis/origin).
-    *   Intuitive horizontal rotation (drag left-right rotates left-right).
-    *   Auto-rotate toggle behavior (starts on, toggles off on manual interaction).
-*   **Action:** Refine `TileViewer3D.jsx` Three.js camera/control logic.
-
-### **D. Dynamic Asset Loading**
-*   **Requirement:** Replace hardcoded thumbnails/models with dynamic paths from the database.
-*   **Action:** Ensure `ProfileSelector.jsx`, `ColorPicker.jsx`, and `TextureSelector.jsx` use the `asset_path` fields from the API responses.
-
----
-
-## 2. Backend Tasks (Functionality)
-
-### **A. Real File Uploads**
-*   **Requirement:** Users must be able to upload roof plans (PDF/Images) during the Quote Request.
-*   **Action:**
-    *   Create a Next.js API route (`app/api/upload/route.js`).
-    *   Integrate with a storage provider (Vercel Blob, Supabase Storage, or AWS S3).
-    *   Update the `base44` shim in `src/api/base44Client.js` to point to this real endpoint.
-
-### **B. Email Notification System**
-*   **Requirement:** Admins should be notified when a new quote is submitted.
-*   **Action:**
-    *   Update `app/api/entities/quoterequest/route.js` (POST method).
-    *   Integrate an email service (Resend, Nodemailer, or SendGrid).
-    *   Send a summary of the configuration and a link to the uploaded plan to the Bartile team.
-
-### **C. Production Authentication**
-*   **Requirement:** Secure the Admin panel.
-*   **Action:**
-    *   Replace the mock `api/auth/me` with a real provider (e.g., Supabase Auth or NextAuth.js).
-    *   Implement a login page for administrators.
+### 3. Infrastructure
+*   **[x] Database Setup:**
+    *   Upgraded to Prisma v7 with `pg` adapter.
+    *   Refactored `schema.prisma` and `seed.js` for compatibility.
+    *   Created shared `src/lib/prisma.js` client.
 
 ---
 
-## 3. Data & Content Management
+## 🚧 Pending / In Progress
 
-### **A. Database Seeding & Migration**
-*   **Action:**
-    *   Run initial migrations: `npx prisma migrate dev`.
-    *   Execute `npm run seed` to populate initial data.
-    *   Collect correct icon paths and 3D model paths from Joe/Bartile team and update the database via the new Admin UI.
+### 1. Backend & Security
+*   **[ ] Production Authentication:**
+    *   Current: Mock auth (`/api/auth/me` returns a static admin user).
+    *   Todo: Integrate Supabase Auth, NextAuth.js, or Clerk for real admin security.
+*   **[ ] Email Service Integration:**
+    *   Current: Logs quote details to the server console.
+    *   Todo: Connect Resend, SendGrid, or Nodemailer to send actual emails to sales@bartile.com.
 
-### **B. House Preview Tagging**
-*   **Action:** Use the Admin UI (`/admin/houses`) to upload house photos and tag them with the specific combinations of Profile/Color/Texture they represent.
+### 2. Content & Data Management
+*   **[ ] Database Seeding Execution:**
+    *   Current: Scripts are written but local DB connection needs troubleshooting (Port 5432/51213).
+    *   Todo: Successfully run `npm run seed` to populate initial profiles and colors.
+*   **[ ] Content Population:**
+    *   Todo: Use the Admin Dashboard (`/admin`) to:
+        *   Upload real 3D models (STL files) for each profile.
+        *   Upload real texture thumbnails.
+        *   Upload and tag House Preview images.
+*   **[ ] Admin UI Refinement:**
+    *   Todo: Integrate the file uploader into the Admin forms (Houses, Profiles) so admins don't have to manually paste URLs.
+
+## 📝 Notes
+*   **Database:** The project is configured for a local PostgreSQL instance. Ensure the database is running and `DATABASE_URL` is correct in `.env`.
+*   **File Storage:** Currently using local disk storage (`public/uploads`). For production (Vercel), switch to Vercel Blob or AWS S3.

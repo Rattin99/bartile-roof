@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/prisma';
 
 export async function GET(request, { params }) {
-  const entityName = params.entity; // e.g., 'tileprofile'
+  const { entity } = await params;
+  const entityName = entity; // e.g., 'tileprofile'
   
   // Map URL param to Prisma model name (PascalCase)
   const modelName = mapEntityToModel(entityName);
@@ -23,7 +24,8 @@ export async function GET(request, { params }) {
 }
 
 export async function POST(request, { params }) {
-  const entityName = params.entity;
+  const { entity } = await params;
+  const entityName = entity;
   const modelName = mapEntityToModel(entityName);
   
   if (!modelName || !prisma[modelName]) {

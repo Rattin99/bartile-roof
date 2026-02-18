@@ -6,18 +6,19 @@ import { RotateCcw, Maximize2, Move } from 'lucide-react';
 
 // Create different tile geometries based on profile
 const createTileGeometry = (profileId) => {
-  const geometry = new THREE.Group();
+  const group = new THREE.Group();
+  let geometry;
   
   switch (profileId) {
     case 'legendary-slate':
     case 'yorkshire-slate': {
       // Slate tiles - flat with beveled edges
       const slateShape = new THREE.Shape();
-      slateShape.moveTo(0, 0);
-      slateShape.lineTo(1.2, 0);
-      slateShape.lineTo(1.15, 1.8);
-      slateShape.lineTo(0.05, 1.8);
-      slateShape.lineTo(0, 0);
+      slateShape.moveTo(-0.6, -0.9);
+      slateShape.lineTo(0.6, -0.9);
+      slateShape.lineTo(0.55, 0.9);
+      slateShape.lineTo(-0.55, 0.9);
+      slateShape.lineTo(-0.6, -0.9);
       
       const extrudeSettings = {
         steps: 1,
@@ -28,11 +29,7 @@ const createTileGeometry = (profileId) => {
         bevelSegments: 2
       };
       
-      const slateMesh = new THREE.Mesh(
-        new THREE.ExtrudeGeometry(slateShape, extrudeSettings),
-        new THREE.MeshStandardMaterial()
-      );
-      geometry.add(slateMesh);
+      geometry = new THREE.ExtrudeGeometry(slateShape, extrudeSettings);
       break;
     }
       
@@ -40,103 +37,95 @@ const createTileGeometry = (profileId) => {
     case 'split-timber':
     case 'yorkshire-split-timber': {
       // Wood shake - textured with splits
-      const shakeBase = new THREE.BoxGeometry(1.2, 1.8, 0.12);
-      const shakeMesh = new THREE.Mesh(
-        shakeBase,
-        new THREE.MeshStandardMaterial()
-      );
-      
-      // Add texture detail
-      for (let i = 0; i < 3; i++) {
-        const split = new THREE.Mesh(
-          new THREE.BoxGeometry(0.02, 1.8, 0.13),
-          new THREE.MeshStandardMaterial({ color: 0x333333 })
-        );
-        split.position.x = (Math.random() - 0.5) * 1.0;
-        geometry.add(split);
-      }
-      
-      geometry.add(shakeMesh);
+      geometry = new THREE.BoxGeometry(1.2, 1.8, 0.12);
       break;
     }
       
     case 'sierra-mission': {
       // Mission tile - high barrel S-curve
       const missionCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0.3, 0, 0.15),
-        new THREE.Vector3(0.6, 0, 0.18),
-        new THREE.Vector3(0.9, 0, 0.12),
-        new THREE.Vector3(1.2, 0, 0)
+        new THREE.Vector3(-0.6, 0, 0),
+        new THREE.Vector3(-0.3, 0, 0.15),
+        new THREE.Vector3(0, 0, 0.18),
+        new THREE.Vector3(0.3, 0, 0.12),
+        new THREE.Vector3(0.6, 0, 0)
       ]);
       
       const missionShape = new THREE.Shape();
       const points = missionCurve.getPoints(50);
       missionShape.moveTo(points[0].x, points[0].z);
       points.forEach(p => missionShape.lineTo(p.x, p.z));
-      missionShape.lineTo(1.2, 0);
-      missionShape.lineTo(0, 0);
+      missionShape.lineTo(0.6, -0.05);
+      missionShape.lineTo(-0.6, -0.05);
+      missionShape.lineTo(-0.6, 0);
       
-      const missionMesh = new THREE.Mesh(
-        new THREE.ExtrudeGeometry(missionShape, { 
-          steps: 20, 
-          depth: 1.8, 
-          bevelEnabled: false 
-        }),
-        new THREE.MeshStandardMaterial()
-      );
-      missionMesh.rotation.x = Math.PI / 2;
-      geometry.add(missionMesh);
+      const extrudeGeometry = new THREE.ExtrudeGeometry(missionShape, { 
+        steps: 20, 
+        depth: 1.8, 
+        bevelEnabled: false 
+      });
+      extrudeGeometry.rotateX(Math.PI / 2);
+      extrudeGeometry.translate(0, 0, -0.9);
+      geometry = extrudeGeometry;
       break;
     }
       
     case 'european': {
       // European - double barrel
-      const euro1Curve = new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(0, 0, 0),
-        new THREE.Vector3(0.3, 0, 0.15),
-        new THREE.Vector3(0.6, 0, 0)
-      );
-      const euro2Curve = new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(0.6, 0, 0),
-        new THREE.Vector3(0.9, 0, 0.15),
-        new THREE.Vector3(1.2, 0, 0)
-      );
-      
       const euroShape = new THREE.Shape();
-      const euro1Points = euro1Curve.getPoints(25);
-      const euro2Points = euro2Curve.getPoints(25);
+      euroShape.moveTo(-0.6, 0);
       
-      euroShape.moveTo(0, 0);
-      euro1Points.forEach(p => euroShape.lineTo(p.x, p.z));
-      euro2Points.forEach(p => euroShape.lineTo(p.x, p.z));
-      euroShape.lineTo(1.2, 0);
-      euroShape.lineTo(0, 0);
+      // First barrel
+      for(let i=0; i<=20; i++) {
+        const x = -0.6 + (i/20) * 0.6;
+        const z = Math.sin((i/20) * Math.PI) * 0.15;
+        euroShape.lineTo(x, z);
+      }
+      // Second barrel
+      for(let i=0; i<=20; i++) {
+        const x = 0 + (i/20) * 0.6;
+        const z = Math.sin((i/20) * Math.PI) * 0.15;
+        euroShape.lineTo(x, z);
+      }
       
-      const euroMesh = new THREE.Mesh(
-        new THREE.ExtrudeGeometry(euroShape, { 
-          steps: 20, 
-          depth: 1.8, 
-          bevelEnabled: false 
-        }),
-        new THREE.MeshStandardMaterial()
-      );
-      euroMesh.rotation.x = Math.PI / 2;
-      geometry.add(euroMesh);
+      euroShape.lineTo(0.6, -0.05);
+      euroShape.lineTo(-0.6, -0.05);
+      euroShape.lineTo(-0.6, 0);
+      
+      const extrudeGeometry = new THREE.ExtrudeGeometry(euroShape, { 
+        steps: 20, 
+        depth: 1.8, 
+        bevelEnabled: false 
+      });
+      extrudeGeometry.rotateX(Math.PI / 2);
+      extrudeGeometry.translate(0, 0, -0.9);
+      geometry = extrudeGeometry;
       break;
     }
       
     default: {
-      // Default flat tile
-      const defaultMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(1.2, 1.8, 0.1),
-        new THREE.MeshStandardMaterial()
-      );
-      geometry.add(defaultMesh);
+      geometry = new THREE.BoxGeometry(1.2, 1.8, 0.1);
     }
   }
   
-  return geometry;
+  if (geometry) {
+    const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial());
+    group.add(mesh);
+
+    // Add split details for timber profiles
+    if (profileId.includes('timber')) {
+      for (let i = 0; i < 3; i++) {
+        const split = new THREE.Mesh(
+          new THREE.BoxGeometry(0.02, 1.8, 0.13),
+          new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 1 })
+        );
+        split.position.x = (Math.random() - 0.5) * 1.0;
+        group.add(split);
+      }
+    }
+  }
+  
+  return group;
 };
 
 // Apply texture based on selection
@@ -149,7 +138,6 @@ const applyTexture = (material, textureId, color) => {
     case 'vintage':
       material.roughness = 0.95;
       material.metalness = 0.1;
-      // Add slight color variation for aged look
       break;
       
     case 'swirl-brush':
@@ -204,8 +192,8 @@ export default function TileViewer3D({ config }) {
       0.1,
       1000
     );
-    camera.position.set(2, 1.5, 3);
-    camera.lookAt(0.6, 0, 0);
+    camera.position.set(0, 1.5, 4);
+    camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
     // Renderer
@@ -396,7 +384,7 @@ export default function TileViewer3D({ config }) {
         // Apply color and texture to all meshes
         tileGroup.traverse((child) => {
           if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-            applyTexture(child.material, config.texture?.id || 'standard', config.color?.hex || '#666666');
+            applyTexture(child.material, config.texture?.id || 'standard', config.color?.hex_code || config.color?.hex || '#666666');
             child.castShadow = true;
             child.receiveShadow = true;
             // Ensure double-sided rendering for open meshes

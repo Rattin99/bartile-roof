@@ -1,7 +1,8 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Info } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import {
   Tooltip,
   TooltipContent,
@@ -9,53 +10,32 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const TEXTURES = [
-  {
-    id: 'standard',
-    name: 'Standard',
-    description: 'Straight factory-finished look with no added options.',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
-    premium: false
-  },
-  {
-    id: 'vintage',
-    name: 'Vintage',
-    description: 'Hand spackled with select colors to simulate moss and lichen growth for an attention-grabbing aged look.',
-    image: 'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?w=400&q=80',
-    premium: true,
-    note: '70% of tiles will simulate moss and lichen growth'
-  },
-  {
-    id: 'swirl-brush',
-    name: 'Swirl Brush',
-    description: 'Hand brushed with a swirl motion giving each tile a slightly different look from the next.',
-    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&q=80',
-    premium: true
-  },
-  {
-    id: 'straight-brush',
-    name: 'Straight Brush',
-    description: 'Straight brushed option gives added texture to any style for a refined finish.',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80',
-    premium: true
-  },
-  {
-    id: 'cobblestone',
-    name: 'Cobblestone',
-    description: 'Dimpled texture that accurately replicates the real look of quarried stone.',
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-    premium: true
-  },
-  {
-    id: 'signature-slate',
-    name: 'Signature Slate',
-    description: 'Removes the divider line in the center of Legendary Slate for a true wide-slate look.',
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80',
-    premium: true
-  }
-];
-
 export default function TextureSelector({ config, updateConfig }) {
+  const [textures, setTextures] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchTextures() {
+      try {
+        const data = await base44.entities.TileTexture.list('sort_order');
+        setTextures(data);
+      } catch (error) {
+        console.error('Failed to fetch textures:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTextures();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="animate-spin w-8 h-8 border-4 border-[#c9a962]/20 border-t-[#c9a962] rounded-full"></div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-8">
@@ -77,8 +57,9 @@ export default function TextureSelector({ config, updateConfig }) {
 
       {/* Texture Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {TEXTURES.map((texture, index) => {
+        {textures.map((texture, index) => {
           const isSelected = config.texture?.id === texture.id;
+          const isPremium = texture.name !== 'Smooth/Standard';
           
           return (
             <motion.button
@@ -94,16 +75,16 @@ export default function TextureSelector({ config, updateConfig }) {
               }`}
             >
               {/* Image */}
-              <div className="relative h-32 overflow-hidden">
+              <div className="relative h-32 overflow-hidden bg-white/5">
                 <img 
-                  src={texture.image} 
+                  src={texture.thumbnail_asset_path || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80'} 
                   alt={texture.name}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] to-transparent" />
                 
                 {/* Premium Badge */}
-                {texture.premium && (
+                {isPremium && (
                   <div className="absolute top-3 right-3">
                     <span className="text-[10px] uppercase tracking-wider px-2 py-1 rounded-full bg-[#c9a962]/20 text-[#c9a962] font-medium">
                       Premium
@@ -129,21 +110,19 @@ export default function TextureSelector({ config, updateConfig }) {
               <div className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-medium text-white">{texture.name}</h3>
-                  {texture.note && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="w-4 h-4 text-white/40" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-xs">{texture.note}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-4 h-4 text-white/40" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="text-xs">Hand-applied finish for authentic look</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-xs text-white/50 line-clamp-2">
-                  {texture.description}
+                  Customized {texture.name.toLowerCase()} texture to enhance your roof profile.
                 </p>
               </div>
             </motion.button>

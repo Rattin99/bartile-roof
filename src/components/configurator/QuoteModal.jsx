@@ -45,20 +45,24 @@ export default function QuoteModal({ open, onClose, config }) {
         const fileInput = document.querySelector('input[type="file"]');
         if (fileInput?.files[0]) {
           const uploadResult = await base44.integrations.Core.UploadFile({ file: fileInput.files[0] });
-          fileUrl = uploadResult.file_url;
+          fileUrl = uploadResult.url; // Use 'url' from /api/upload response
         }
       }
 
       // Save quote request
       await base44.entities.QuoteRequest.create({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        comments: formData.comments,
-        configuration: config,
-        file_url: fileUrl,
-        status: 'pending'
+        contact_name: formData.name,
+        contact_email: formData.email,
+        contact_phone: formData.phone,
+        project_address: formData.address,
+        plan_file_path: fileUrl,
+        configuration_snapshot: {
+            ...config,
+            profile_name: config.profile?.name,
+            color_name: config.color?.name,
+            texture_name: config.texture?.name
+        },
+        status: 'NEW'
       });
       
       setIsSubmitting(false);
@@ -149,7 +153,7 @@ export default function QuoteModal({ open, onClose, config }) {
                       {config.color && (
                         <div 
                           className="w-10 h-10 rounded-lg flex-shrink-0"
-                          style={{ backgroundColor: config.color.hex }}
+                          style={{ backgroundColor: config.color.hex_code || config.color.hex }}
                         />
                       )}
                       <div>

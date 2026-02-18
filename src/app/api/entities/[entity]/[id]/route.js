@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '../../../../../lib/prisma';
 
 export async function PUT(request, { params }) {
-  const { entity, id } = params;
+  const { entity, id } = await params;
   const modelName = mapEntityToModel(entity);
   
   if (!modelName || !prisma[modelName]) {
@@ -22,7 +22,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-  const { entity, id } = params;
+  const { entity, id } = await params;
   const modelName = mapEntityToModel(entity);
   
   if (!modelName || !prisma[modelName]) {

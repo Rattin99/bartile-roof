@@ -4,7 +4,14 @@
 const fetchApi = async (url, options = {}) => {
   const res = await fetch(url, options);
   if (!res.ok) {
-    throw new Error(`API Error: ${res.statusText}`);
+    let errorMessage = res.statusText;
+    try {
+      const errorBody = await res.json();
+      if (errorBody.error) errorMessage = errorBody.error;
+    } catch (e) {
+      // Ignore JSON parse error, fallback to statusText
+    }
+    throw new Error(`API Error: ${errorMessage}`);
   }
   return res.json();
 };
@@ -72,10 +79,16 @@ export const base44 = {
   integrations: {
     Core: {
       UploadFile: async ({ file }) => {
-        console.log('Mock Upload:', file.name);
-        // Returns a fake URL for now. 
-        // In real implementation: POST to /api/upload
-        return { url: URL.createObjectURL(file) };
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!res.ok) throw new Error('Upload failed');
+        return res.json();
       },
       // Mock other integrations as no-ops or logs
       InvokeLLM: async () => {},

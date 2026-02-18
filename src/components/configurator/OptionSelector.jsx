@@ -1,6 +1,7 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
+import { base44 } from '@/api/base44Client';
 import {
   Accordion,
   AccordionContent,
@@ -18,11 +19,6 @@ const WEIGHT_OPTIONS = [
   { id: 'standard', name: 'Standard', description: '10.4 lbs/sq.ft. - Perfect for easy installation' },
   { id: 'ultralite', name: 'Ultralite', description: '8.9 lbs/sq.ft. - Perfect for re-roofing' },
   { id: 'super-duty', name: 'Super Duty', description: '11.6 lbs/sq.ft. - For extreme weather climates' }
-];
-
-const LAYOUT_OPTIONS = [
-  { id: 'standard', name: 'Standard', description: 'Straight factory-finished look' },
-  { id: 'cottage', name: 'Cottage', description: 'Variable staggering for unparalleled texture' }
 ];
 
 const TRIM_OPTIONS = {
@@ -60,16 +56,29 @@ function OptionGroup({ options, selectedId, onChange }) {
                 : 'bg-white/5 hover:bg-white/8'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium text-white text-sm">{option.name}</h4>
-                <p className="text-xs text-white/50 mt-0.5">{option.description}</p>
-              </div>
-              {isSelected && (
-                <div className="w-5 h-5 rounded-full bg-[#c9a962] flex items-center justify-center flex-shrink-0">
-                  <Check className="w-3 h-3 text-[#0f0f0f]" />
+            <div className="flex items-center gap-4">
+              {option.thumbnail_asset_path && (
+                <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                  <img 
+                    src={option.thumbnail_asset_path} 
+                    alt={option.name} 
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               )}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-white text-sm truncate">{option.name}</h4>
+                  {isSelected && (
+                    <div className="w-5 h-5 rounded-full bg-[#c9a962] flex items-center justify-center flex-shrink-0">
+                      <Check className="w-3 h-3 text-[#0f0f0f]" />
+                    </div>
+                  )}
+                </div>
+                {option.description && (
+                  <p className="text-xs text-white/50 mt-0.5 line-clamp-1">{option.description}</p>
+                )}
+              </div>
             </div>
           </button>
         );
@@ -79,6 +88,28 @@ function OptionGroup({ options, selectedId, onChange }) {
 }
 
 export default function OptionSelector({ config, updateConfig }) {
+  const [layoutOptions, setLayoutOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchLayoutOptions() {
+      try {
+        const data = await base44.entities.LayoutOption.list('sort_order');
+        setLayoutOptions(data);
+        
+        // Default to first option if none selected
+        if (!config.layout && data.length > 0) {
+          updateConfig('layout', data[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch layout options:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchLayoutOptions();
+  }, []);
+
   const updateTrim = (type, value) => {
     updateConfig('trim', { ...config.trim, [type]: value });
   };
@@ -142,14 +173,14 @@ export default function OptionSelector({ config, updateConfig }) {
               <div className="text-left">
                 <h3 className="font-medium text-white">Layout Options</h3>
                 <p className="text-xs text-white/50 mt-0.5">
-                  {LAYOUT_OPTIONS.find(o => o.id === config.layout)?.name || 'Select'}
+                  {loading ? 'Loading...' : (layoutOptions.find(o => o.id === config.layout)?.name || 'Select')}
                 </p>
               </div>
             </div>
           </AccordionTrigger>
           <AccordionContent className="bg-white/5 rounded-b-xl px-5 pb-4 pt-2">
             <OptionGroup 
-              options={LAYOUT_OPTIONS} 
+              options={layoutOptions} 
               selectedId={config.layout} 
               onChange={(id) => updateConfig('layout', id)} 
             />

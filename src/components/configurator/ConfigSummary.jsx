@@ -110,8 +110,8 @@ export default function ConfigSummary({ config, onRequestQuote }) {
           />
           <SummaryItem 
             label="Color" 
-            value={config.color ? `${config.color.name} (#${config.color.id})` : null}
-            color={config.color?.hex}
+            value={config.color ? `${config.color.name} (#${config.color.id.slice(0,4)})` : null}
+            color={config.color?.hex_code || config.color?.hex}
           />
           <SummaryItem 
             label="Texture" 
@@ -132,7 +132,7 @@ export default function ConfigSummary({ config, onRequestQuote }) {
           />
           <SummaryItem 
             label="Layout" 
-            value={LAYOUT_LABELS[config.layout]} 
+            value={config.layout?.name || LAYOUT_LABELS[config.layout] || config.layout} 
           />
         </div>
 
@@ -161,12 +161,12 @@ export default function ConfigSummary({ config, onRequestQuote }) {
           <div className="flex items-center gap-4">
             <div 
               className="w-20 h-20 rounded-xl"
-              style={{ backgroundColor: config.color.hex }}
+              style={{ backgroundColor: config.color.hex_code || config.color.hex }}
             />
             <div>
               <p className="text-white font-medium text-lg">{config.color.name}</p>
-              <p className="text-white/50 text-sm">Color Code: #{config.color.id}</p>
-              <p className="text-white/40 text-xs mt-1">{config.color.category} Collection</p>
+              <p className="text-white/50 text-sm">Color Code: {config.color.id.slice(0, 8)}</p>
+              <p className="text-white/40 text-xs mt-1">{config.color.is_standard ? 'Standard' : 'Premium'} Collection</p>
             </div>
           </div>
         </div>
