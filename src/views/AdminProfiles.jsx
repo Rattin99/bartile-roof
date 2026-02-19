@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { createPageUrl } from '@/utils';
 import { Plus, Edit, Trash2, ArrowLeft, Save, X, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { FileUploader } from '@/components/admin/FileUploader';
+import { cn } from '@/lib/utils';
 
 const CATEGORIES = ['Slate', 'Split Timber', 'Mission', 'Mediterranean', 'Yorkshire'];
 
@@ -25,7 +27,7 @@ const TILE_IMAGES = [
 ];
 
 export default function AdminProfiles() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingProfile, setEditingProfile] = useState(null);
@@ -50,10 +52,10 @@ export default function AdminProfiles() {
     try {
       const user = await base44.auth.me();
       if (user.role !== 'admin') {
-        navigate(createPageUrl('TileConfigurator'));
+        router.push('/');
       }
     } catch {
-      base44.auth.redirectToLogin();
+      router.push('/login');
     }
   };
 
@@ -77,6 +79,7 @@ export default function AdminProfiles() {
       category: profile.category,
       description: profile.description || '',
       image_url: profile.image_url || '',
+      model_asset_path: profile.model_asset_path || '',
       features: profile.features || [''],
       is_active: profile.is_active ?? true,
       sort_order: profile.sort_order || 0
@@ -92,6 +95,7 @@ export default function AdminProfiles() {
       category: '',
       description: '',
       image_url: '',
+      model_asset_path: '',
       features: [''],
       is_active: true,
       sort_order: 0
@@ -124,11 +128,15 @@ export default function AdminProfiles() {
     if (!confirm(`Are you sure you want to delete ${profile.name}?`)) return;
     
     try {
+      // Optimistic update
+      setProfiles(prev => prev.filter(p => p.id !== profile.id));
+      
       await base44.entities.TileProfile.delete(profile.id);
-      loadProfiles();
+      loadProfiles(); // Refresh to be sure
     } catch (error) {
       console.error('Failed to delete profile:', error);
       alert('Failed to delete profile');
+      loadProfiles(); // Rollback by reloading
     }
   };
 
@@ -155,7 +163,7 @@ export default function AdminProfiles() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => navigate(createPageUrl('Admin'))}
+                onClick={() => router.push('/admin')}
                 className="text-white/60 hover:text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -329,30 +337,46 @@ export default function AdminProfiles() {
             </div>
 
             <div>
-              <Label>Image URL</Label>
-              <div className="flex gap-2 mb-2">
-                <Input
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://... or /tiles/..."
-                  className="bg-white/5 border-white/10 text-white flex-1"
-                />
+              <Label>Profile Image</Label>
+              <div className="space-y-4 mt-2">
+                  <FileUploader 
+                      value={formData.image_url} 
+                      onUploadComplete={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+                      accept=".jpg,.jpeg,.png,.webp"
+                      label="Upload Image"
+                  />
+                  
+                  <div className="text-xs text-white/50 mb-2">Or select from defaults:</div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {TILE_IMAGES.map((img) => (
+                      <button
+                        key={img.path}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, image_url: img.path }))}
+                        className={cn(
+                          "relative aspect-video rounded-md overflow-hidden border-2 transition-all",
+                          formData.image_url === img.path ? 'border-[#c9a962]' : 'border-transparent hover:border-white/20'
+                        )}
+                      >
+                        <img src={img.path} alt={img.name} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 flex items-end p-1">
+                          <span className="text-[8px] text-white truncate">{img.name}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
               </div>
-              <div className="grid grid-cols-4 gap-2 mt-2">
-                {TILE_IMAGES.map((img) => (
-                  <button
-                    key={img.path}
-                    onClick={() => setFormData({ ...formData, image_url: img.path })}
-                    className={`relative aspect-video rounded-md overflow-hidden border-2 transition-all ${
-                      formData.image_url === img.path ? 'border-[#c9a962]' : 'border-transparent hover:border-white/20'
-                    }`}
-                  >
-                    <img src={img.path} alt={img.name} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-black/40 flex items-end p-1">
-                      <span className="text-[8px] text-white truncate">{img.name}</span>
-                    </div>
-                  </button>
-                ))}
+            </div>
+
+            <div className="mt-4">
+              <Label>3D Model (STL/GLB)</Label>
+              <div className="mt-2">
+                <FileUploader 
+                    value={formData.model_asset_path} 
+                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, model_asset_path: url }))}
+                    accept=".stl,.glb,.gltf,.obj"
+                    label="Upload 3D Model"
+                />
               </div>
             </div>
 

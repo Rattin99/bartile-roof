@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,44 +6,52 @@ datasource db {
   provider = "postgresql"
 }
 
-// -- Configuration Entities --
-
 model TileProfile {
-  id               String   @id @default(uuid())
+  id               String         @id @default(uuid())
+  profile_id       String?        @unique
   name             String
+  category         String?
   description      String?
+  image_url        String?
   model_asset_path String?
   icon_asset_path  String?
-  sort_order       Int      @default(0)
-  is_active        Boolean  @default(true)
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-
-  housePreviews HousePreview[]
+  features         String[]
+  sort_order       Int            @default(0)
+  is_active        Boolean        @default(true)
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+  housePreviews    HousePreview[]
 }
 
 model TileColor {
-  id          String   @id @default(uuid())
-  name        String
-  hex_code    String
-  is_standard Boolean  @default(true)
-  sort_order  Int      @default(0)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-
+  id            String         @id @default(uuid())
+  color_id      String?        @unique
+  name          String
+  hex_code      String
+  category      String?
+  is_standard   Boolean        @default(true)
+  is_active     Boolean        @default(true)
+  sort_order    Int            @default(0)
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
   housePreviews HousePreview[]
 }
 
 model TileTexture {
-  id                   String   @id @default(uuid())
+  id                   String         @id @default(uuid())
+  texture_id           String?        @unique
   name                 String
+  description          String?
+  image_url            String?
   map_asset_path       String?
   thumbnail_asset_path String?
-  sort_order           Int      @default(0)
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
-
-  housePreviews HousePreview[]
+  is_premium           Boolean        @default(false)
+  note                 String?
+  is_active            Boolean        @default(true)
+  sort_order           Int            @default(0)
+  created_at           DateTime       @default(now())
+  updated_at           DateTime       @updatedAt
+  housePreviews        HousePreview[]
 }
 
 model LayoutOption {
@@ -58,27 +63,23 @@ model LayoutOption {
   updated_at           DateTime @updatedAt
 }
 
-// -- Visualizer Entities --
-
 model HousePreview {
-  id         String   @id @default(uuid())
+  id         String       @id @default(uuid())
+  house_id   String?      @unique
+  name       String?
   image_url  String
   tags       String[]
-  sort_order Int      @default(0)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
+  is_active  Boolean      @default(true)
+  sort_order Int          @default(0)
+  created_at DateTime     @default(now())
+  updated_at DateTime     @updatedAt
   profile_id String?
-  profile    TileProfile? @relation(fields: [profile_id], references: [id])
-
-  color_id String?
-  color    TileColor? @relation(fields: [color_id], references: [id])
-
+  color_id   String?
   texture_id String?
+  color      TileColor?   @relation(fields: [color_id], references: [id])
+  profile    TileProfile? @relation(fields: [profile_id], references: [id])
   texture    TileTexture? @relation(fields: [texture_id], references: [id])
 }
-
-// -- Business Entities --
 
 model QuoteRequest {
   id                     String   @id @default(uuid())
@@ -88,8 +89,9 @@ model QuoteRequest {
   project_address        String?
   estimated_squares      Float?
   plan_file_path         String?
-  configuration_snapshot Json? // Stores the specific profile/color/texture choice
-  status                 String   @default("NEW") // NEW, PROCESSING, COMPLETED, ARCHIVED
+  configuration_snapshot Json?
+  status                 String   @default("NEW")
+  comments               String?
   created_at             DateTime @default(now())
   updated_at             DateTime @updatedAt
 }

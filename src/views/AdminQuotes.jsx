@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { createPageUrl } from '@/utils';
 import { ArrowLeft, Eye, Mail, Phone, MapPin, Calendar, FileText, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ const STATUS_COLORS = {
 };
 
 export default function AdminQuotes() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedQuote, setSelectedQuote] = useState(null);
@@ -35,18 +35,20 @@ export default function AdminQuotes() {
     try {
       const user = await base44.auth.me();
       if (user.role !== 'admin') {
-        navigate(createPageUrl('TileConfigurator'));
+        router.push('/');
       }
     } catch {
-      base44.auth.redirectToLogin();
+      router.push('/login');
     }
   };
 
   const loadQuotes = async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.QuoteRequest.list('-created_date');
-      setQuotes(data);
+      const data = await base44.entities.QuoteRequest.list();
+      // Sort in memory as list() arg support depends on API implementation
+      const sorted = data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setQuotes(sorted);
     } catch (error) {
       console.error('Failed to load quotes:', error);
     } finally {
@@ -64,7 +66,7 @@ export default function AdminQuotes() {
       await base44.entities.QuoteRequest.update(quoteId, { status: newStatus });
       loadQuotes();
       if (selectedQuote?.id === quoteId) {
-        setSelectedQuote({ ...selectedQuote, status: newStatus });
+        setSelectedQuote(prev => ({ ...prev, status: newStatus }));
       }
     } catch (error) {
       console.error('Failed to update status:', error);
@@ -85,7 +87,7 @@ export default function AdminQuotes() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => navigate(createPageUrl('Admin'))}
+                onClick={() => router.push('/admin')}
                 className="text-white/60 hover:text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -98,15 +100,14 @@ export default function AdminQuotes() {
             </div>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-40 bg-white/5 border-white/10 text-white">
-                <SelectValue />
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="reviewed">Reviewed</SelectItem>
-                <SelectItem value="quoted">Quoted</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="NEW">New</SelectItem>
+                <SelectItem value="PROCESSING">Processing</SelectItem>
+                <SelectItem value="COMPLETED">Completed</SelectItem>
+                <SelectItem value="ARCHIVED">Archived</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -131,25 +132,25 @@ export default function AdminQuotes() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <CardTitle className="text-white text-lg">{quote.name}</CardTitle>
-                        <Badge className={STATUS_COLORS[quote.status || 'pending']}>
-                          {quote.status || 'pending'}
+                        <CardTitle className="text-white text-lg">{quote.contact_name}</CardTitle>
+                        <Badge className={STATUS_COLORS[quote.status?.toLowerCase()] || 'bg-gray-500/20 text-gray-400'}>
+                          {quote.status}
                         </Badge>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                         <div className="flex items-center gap-2 text-white/60">
                           <Mail className="w-4 h-4" />
-                          {quote.email}
+                          {quote.contact_email}
                         </div>
-                        {quote.phone && (
+                        {quote.contact_phone && (
                           <div className="flex items-center gap-2 text-white/60">
                             <Phone className="w-4 h-4" />
-                            {quote.phone}
+                            {quote.contact_phone}
                           </div>
                         )}
                         <div className="flex items-center gap-2 text-white/60">
                           <Calendar className="w-4 h-4" />
-                          {format(new Date(quote.created_date), 'MMM d, yyyy')}
+                          {quote.created_at && format(new Date(quote.created_at), 'MMM d, yyyy')}
                         </div>
                       </div>
                     </div>
@@ -169,21 +170,19 @@ export default function AdminQuotes() {
                 <CardContent>
                   <div className="flex items-center gap-2 text-white/50 text-sm">
                     <MapPin className="w-4 h-4" />
-                    {quote.address}
+                    {quote.project_address || 'No address provided'}
                   </div>
-                  {quote.configuration && (
+                  {quote.configuration_snapshot && (
                     <div className="mt-3 pt-3 border-t border-white/5">
                       <p className="text-white/40 text-xs mb-2">Configuration:</p>
                       <div className="flex flex-wrap gap-2">
-                        {quote.configuration.profile && (
-                          <Badge variant="outline">{quote.configuration.profile.name}</Badge>
-                        )}
-                        {quote.configuration.color && (
-                          <Badge variant="outline">{quote.configuration.color.name}</Badge>
-                        )}
-                        {quote.configuration.texture && (
-                          <Badge variant="outline">{quote.configuration.texture.name}</Badge>
-                        )}
+                         {/* Parsing JSON snapshot safely */}
+                         {quote.configuration_snapshot.profile && (
+                             <Badge variant="outline">{quote.configuration_snapshot.profile.name}</Badge>
+                         )}
+                         {quote.configuration_snapshot.color && (
+                             <Badge variant="outline">{quote.configuration_snapshot.color.name}</Badge>
+                         )}
                       </div>
                     </div>
                   )}
@@ -200,21 +199,22 @@ export default function AdminQuotes() {
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Quote Request Details</DialogTitle>
-              <Select 
-                value={selectedQuote?.status || 'pending'} 
-                onValueChange={(value) => handleStatusUpdate(selectedQuote.id, value)}
-              >
-                <SelectTrigger className="w-32 bg-white/5 border-white/10 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="reviewed">Reviewed</SelectItem>
-                  <SelectItem value="quoted">Quoted</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
+              {selectedQuote && (
+                <Select 
+                    value={selectedQuote.status} 
+                    onValueChange={(value) => handleStatusUpdate(selectedQuote.id, value)}
+                >
+                    <SelectTrigger className="w-32 bg-white/5 border-white/10 text-white">
+                    <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="NEW">New</SelectItem>
+                    <SelectItem value="PROCESSING">Processing</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                    <SelectItem value="ARCHIVED">Archived</SelectItem>
+                    </SelectContent>
+                </Select>
+              )}
             </div>
           </DialogHeader>
           
@@ -226,96 +226,57 @@ export default function AdminQuotes() {
                 <div className="bg-white/5 rounded-xl p-4 space-y-3">
                   <div>
                     <p className="text-xs text-white/40">Name</p>
-                    <p className="text-white">{selectedQuote.name}</p>
+                    <p className="text-white">{selectedQuote.contact_name}</p>
                   </div>
                   <div>
                     <p className="text-xs text-white/40">Email</p>
-                    <p className="text-white">{selectedQuote.email}</p>
+                    <p className="text-white">{selectedQuote.contact_email}</p>
                   </div>
-                  {selectedQuote.phone && (
+                  {selectedQuote.contact_phone && (
                     <div>
                       <p className="text-xs text-white/40">Phone</p>
-                      <p className="text-white">{selectedQuote.phone}</p>
+                      <p className="text-white">{selectedQuote.contact_phone}</p>
                     </div>
                   )}
                   <div>
                     <p className="text-xs text-white/40">Project Address</p>
-                    <p className="text-white">{selectedQuote.address}</p>
+                    <p className="text-white">{selectedQuote.project_address}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/40">Estimated Squares</p>
+                    <p className="text-white">{selectedQuote.estimated_squares || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-white/40">Submitted</p>
-                    <p className="text-white">{format(new Date(selectedQuote.created_date), 'PPpp')}</p>
+                    <p className="text-white">{selectedQuote.created_at && format(new Date(selectedQuote.created_at), 'PPpp')}</p>
                   </div>
                 </div>
               </div>
 
               {/* Configuration */}
-              {selectedQuote.configuration && (
+              {selectedQuote.configuration_snapshot && (
                 <div>
-                  <h3 className="text-sm font-medium text-white/40 mb-3">Tile Configuration</h3>
-                  <div className="bg-white/5 rounded-xl p-4 space-y-3">
-                    {selectedQuote.configuration.profile && (
-                      <div>
-                        <p className="text-xs text-white/40">Tile Profile</p>
-                        <p className="text-white">{selectedQuote.configuration.profile.name}</p>
-                      </div>
-                    )}
-                    {selectedQuote.configuration.color && (
-                      <div>
-                        <p className="text-xs text-white/40">Color</p>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-6 h-6 rounded"
-                            style={{ backgroundColor: selectedQuote.configuration.color.hex }}
-                          />
-                          <p className="text-white">
-                            {selectedQuote.configuration.color.name} (#{selectedQuote.configuration.color.id})
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    {selectedQuote.configuration.texture && (
-                      <div>
-                        <p className="text-xs text-white/40">Texture</p>
-                        <p className="text-white">{selectedQuote.configuration.texture.name}</p>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-3 pt-3">
-                      <div>
-                        <p className="text-xs text-white/40">Edge Design</p>
-                        <p className="text-white text-sm">{selectedQuote.configuration.edge}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-white/40">Weight</p>
-                        <p className="text-white text-sm">{selectedQuote.configuration.weight}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Comments */}
-              {selectedQuote.comments && (
-                <div>
-                  <h3 className="text-sm font-medium text-white/40 mb-3">Additional Comments</h3>
+                  <h3 className="text-sm font-medium text-white/40 mb-3">Configuration Snapshot</h3>
                   <div className="bg-white/5 rounded-xl p-4">
-                    <p className="text-white text-sm">{selectedQuote.comments}</p>
+                    <pre className="text-xs text-white whitespace-pre-wrap font-mono">
+                        {JSON.stringify(selectedQuote.configuration_snapshot, null, 2)}
+                    </pre>
                   </div>
                 </div>
               )}
 
               {/* File */}
-              {selectedQuote.file_url && (
+              {selectedQuote.plan_file_path && (
                 <div>
-                  <h3 className="text-sm font-medium text-white/40 mb-3">Uploaded File</h3>
+                  <h3 className="text-sm font-medium text-white/40 mb-3">Uploaded Plan</h3>
                   <a
-                    href={selectedQuote.file_url}
+                    href={selectedQuote.plan_file_path}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 bg-white/5 rounded-xl p-4 hover:bg-white/10 transition-colors"
                   >
                     <FileText className="w-5 h-5 text-[#c9a962]" />
-                    <span className="text-white">View Uploaded File</span>
+                    <span className="text-white">View Uploaded Plan</span>
                     <ExternalLink className="w-4 h-4 ml-auto text-white/40" />
                   </a>
                 </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { createPageUrl } from '@/utils';
 import { Plus, Edit, Trash2, ArrowLeft, Save, Eye, EyeOff, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,21 +10,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { FileUploader } from '@/components/admin/FileUploader';
 
 export default function AdminTextures() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [textures, setTextures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingTexture, setEditingTexture] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [formData, setFormData] = useState({
-    texture_id: '',
     name: '',
-    description: '',
-    image_url: '',
-    is_premium: false,
-    note: '',
-    is_active: true,
+    map_asset_path: '',
+    thumbnail_asset_path: '',
     sort_order: 0
   });
 
@@ -37,10 +34,10 @@ export default function AdminTextures() {
     try {
       const user = await base44.auth.me();
       if (user.role !== 'admin') {
-        navigate(createPageUrl('TileConfigurator'));
+        router.push('/');
       }
     } catch {
-      base44.auth.redirectToLogin();
+      router.push('/login');
     }
   };
 
@@ -59,13 +56,9 @@ export default function AdminTextures() {
   const handleEdit = (texture) => {
     setEditingTexture(texture);
     setFormData({
-      texture_id: texture.texture_id,
       name: texture.name,
-      description: texture.description || '',
-      image_url: texture.image_url || '',
-      is_premium: texture.is_premium ?? false,
-      note: texture.note || '',
-      is_active: texture.is_active ?? true,
+      map_asset_path: texture.map_asset_path || '',
+      thumbnail_asset_path: texture.thumbnail_asset_path || '',
       sort_order: texture.sort_order || 0
     });
     setShowDialog(true);
@@ -74,13 +67,9 @@ export default function AdminTextures() {
   const handleNew = () => {
     setEditingTexture(null);
     setFormData({
-      texture_id: '',
       name: '',
-      description: '',
-      image_url: '',
-      is_premium: false,
-      note: '',
-      is_active: true,
+      map_asset_path: '',
+      thumbnail_asset_path: '',
       sort_order: 0
     });
     setShowDialog(true);
@@ -123,7 +112,7 @@ export default function AdminTextures() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => navigate(createPageUrl('Admin'))}
+                onClick={() => router.push('/admin')}
                 className="text-white/60 hover:text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -156,16 +145,7 @@ export default function AdminTextures() {
                 <CardHeader>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex gap-2">
-                      <Badge className={texture.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
-                        {texture.is_active ? <Eye className="w-3 h-3 mr-1" /> : <EyeOff className="w-3 h-3 mr-1" />}
-                        {texture.is_active ? 'Active' : 'Hidden'}
-                      </Badge>
-                      {texture.is_premium && (
-                        <Badge className="bg-[#c9a962]/20 text-[#c9a962]">
-                          <Crown className="w-3 h-3 mr-1" />
-                          Premium
-                        </Badge>
-                      )}
+                       {/* Schema only has name, sort_order, paths */}
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -186,9 +166,9 @@ export default function AdminTextures() {
                       </Button>
                     </div>
                   </div>
-                  {texture.image_url && (
+                  {texture.thumbnail_asset_path && (
                     <img
-                      src={texture.image_url}
+                      src={texture.thumbnail_asset_path}
                       alt={texture.name}
                       className="w-full h-32 object-cover rounded-lg mb-3"
                     />
@@ -196,10 +176,7 @@ export default function AdminTextures() {
                   <CardTitle className="text-white">{texture.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-white/50 text-sm mb-2 line-clamp-2">{texture.description}</p>
-                  {texture.note && (
-                    <p className="text-[#c9a962] text-xs mt-2">Note: {texture.note}</p>
-                  )}
+                  <p className="text-white/50 text-sm mb-2">Order: {texture.sort_order}</p>
                 </CardContent>
               </Card>
             ))}
@@ -214,87 +191,48 @@ export default function AdminTextures() {
             <DialogTitle>{editingTexture ? 'Edit Texture' : 'New Texture'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Texture ID *</Label>
-                <Input
-                  value={formData.texture_id}
-                  onChange={(e) => setFormData({ ...formData, texture_id: e.target.value })}
-                  placeholder="vintage"
-                  className="bg-white/5 border-white/10 text-white"
-                  disabled={!!editingTexture}
-                />
-              </div>
-              <div>
-                <Label>Name *</Label>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Vintage"
-                  className="bg-white/5 border-white/10 text-white"
-                />
-              </div>
-            </div>
-
             <div>
-              <Label>Description *</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe the texture..."
-                rows={3}
-                className="bg-white/5 border-white/10 text-white"
-              />
-            </div>
-
-            <div>
-              <Label>Image URL</Label>
+              <Label>Name *</Label>
               <Input
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://..."
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Texture Name"
                 className="bg-white/5 border-white/10 text-white"
               />
             </div>
 
             <div>
-              <Label>Note (Optional)</Label>
-              <Input
-                value={formData.note}
-                onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                placeholder="e.g., 70% of tiles will simulate moss..."
-                className="bg-white/5 border-white/10 text-white"
-              />
+              <Label>Thumbnail Image</Label>
+              <div className="mt-2">
+                <FileUploader 
+                    value={formData.thumbnail_asset_path} 
+                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, thumbnail_asset_path: url }))}
+                    accept=".jpg,.jpeg,.png,.webp"
+                    label="Upload Thumbnail"
+                />
+              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Sort Order</Label>
-                <Input
-                  type="number"
-                  value={formData.sort_order}
-                  onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
-                  className="bg-white/5 border-white/10 text-white"
+            <div>
+              <Label>Texture Map (Image)</Label>
+              <div className="mt-2">
+                <FileUploader 
+                    value={formData.map_asset_path} 
+                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, map_asset_path: url }))}
+                    accept=".jpg,.jpeg,.png,.webp"
+                    label="Upload Texture Map"
                 />
               </div>
-              <div className="flex items-center gap-2 mt-6">
-                <input
-                  type="checkbox"
-                  checked={formData.is_premium}
-                  onChange={(e) => setFormData({ ...formData, is_premium: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <Label>Premium</Label>
-              </div>
-              <div className="flex items-center gap-2 mt-6">
-                <input
-                  type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <Label>Active</Label>
-              </div>
+            </div>
+
+            <div>
+              <Label>Sort Order</Label>
+              <Input
+                type="number"
+                value={formData.sort_order}
+                onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
+                className="bg-white/5 border-white/10 text-white"
+              />
             </div>
 
             <div className="flex justify-end gap-3 pt-4">

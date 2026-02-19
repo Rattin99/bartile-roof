@@ -1,29 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { createPageUrl } from '@/utils';
-import { Plus, Edit, Trash2, ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 
-const COLOR_CATEGORIES = ['Dark', 'Gray', 'Brown', 'Tan', 'Red', 'Green', 'Blue'];
-
 export default function AdminColors() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [colors, setColors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingColor, setEditingColor] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [formData, setFormData] = useState({
-    color_id: '',
     name: '',
-    hex: '#666666',
-    category: '',
-    is_active: true,
+    hex_code: '#666666',
+    is_standard: true,
     sort_order: 0
   });
 
@@ -36,10 +31,10 @@ export default function AdminColors() {
     try {
       const user = await base44.auth.me();
       if (user.role !== 'admin') {
-        navigate(createPageUrl('TileConfigurator'));
+        router.push('/');
       }
     } catch {
-      base44.auth.redirectToLogin();
+      router.push('/login');
     }
   };
 
@@ -58,11 +53,9 @@ export default function AdminColors() {
   const handleEdit = (color) => {
     setEditingColor(color);
     setFormData({
-      color_id: color.color_id,
       name: color.name,
-      hex: color.hex,
-      category: color.category,
-      is_active: color.is_active ?? true,
+      hex_code: color.hex_code || color.hex || '#666666', // Fallback for old data or mismatch
+      is_standard: color.is_standard ?? true,
       sort_order: color.sort_order || 0
     });
     setShowDialog(true);
@@ -71,11 +64,9 @@ export default function AdminColors() {
   const handleNew = () => {
     setEditingColor(null);
     setFormData({
-      color_id: '',
       name: '',
-      hex: '#666666',
-      category: '',
-      is_active: true,
+      hex_code: '#666666',
+      is_standard: true,
       sort_order: 0
     });
     setShowDialog(true);
@@ -118,7 +109,7 @@ export default function AdminColors() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => navigate(createPageUrl('Admin'))}
+                onClick={() => router.push('/admin')}
                 className="text-white/60 hover:text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -152,8 +143,8 @@ export default function AdminColors() {
                 className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all group"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <Badge className={color.is_active ? 'bg-green-500/20 text-green-400 text-xs' : 'bg-red-500/20 text-red-400 text-xs'}>
-                    {color.is_active ? <Eye className="w-2 h-2 mr-1" /> : <EyeOff className="w-2 h-2 mr-1" />}
+                  <Badge className={color.is_standard ? 'bg-blue-500/20 text-blue-400 text-xs' : 'bg-orange-500/20 text-orange-400 text-xs'}>
+                    {color.is_standard ? 'Standard' : 'Custom'}
                   </Badge>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
@@ -177,13 +168,11 @@ export default function AdminColors() {
                 
                 <div 
                   className="aspect-square rounded-lg mb-3"
-                  style={{ backgroundColor: color.hex }}
+                  style={{ backgroundColor: color.hex_code || color.hex }}
                 />
                 
                 <div>
                   <p className="text-sm font-medium text-white truncate">{color.name}</p>
-                  <p className="text-xs text-white/40">#{color.color_id}</p>
-                  <Badge variant="outline" className="mt-1 text-xs">{color.category}</Badge>
                 </div>
               </div>
             ))}
@@ -198,32 +187,6 @@ export default function AdminColors() {
             <DialogTitle>{editingColor ? 'Edit Color' : 'New Color'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Color ID *</Label>
-                <Input
-                  value={formData.color_id}
-                  onChange={(e) => setFormData({ ...formData, color_id: e.target.value })}
-                  placeholder="33"
-                  className="bg-white/5 border-white/10 text-white"
-                  disabled={!!editingColor}
-                />
-              </div>
-              <div>
-                <Label>Category *</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
-                  <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COLOR_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             <div>
               <Label>Name *</Label>
               <Input
@@ -239,13 +202,13 @@ export default function AdminColors() {
               <div className="flex gap-3">
                 <Input
                   type="color"
-                  value={formData.hex}
-                  onChange={(e) => setFormData({ ...formData, hex: e.target.value })}
+                  value={formData.hex_code}
+                  onChange={(e) => setFormData({ ...formData, hex_code: e.target.value })}
                   className="w-20 h-10 bg-white/5 border-white/10"
                 />
                 <Input
-                  value={formData.hex}
-                  onChange={(e) => setFormData({ ...formData, hex: e.target.value })}
+                  value={formData.hex_code}
+                  onChange={(e) => setFormData({ ...formData, hex_code: e.target.value })}
                   placeholder="#666666"
                   className="flex-1 bg-white/5 border-white/10 text-white"
                 />
@@ -265,11 +228,11 @@ export default function AdminColors() {
               <div className="flex items-center gap-2 mt-6">
                 <input
                   type="checkbox"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  checked={formData.is_standard}
+                  onChange={(e) => setFormData({ ...formData, is_standard: e.target.checked })}
                   className="w-4 h-4"
                 />
-                <Label>Active</Label>
+                <Label>Standard</Label>
               </div>
             </div>
 

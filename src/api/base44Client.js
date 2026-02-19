@@ -1,8 +1,13 @@
 // base44Client.js - Adapter Layer for Migration
 
+import { createClient } from '@/lib/supabase';
+
 // Helper function for fetching from our new Next.js API
 const fetchApi = async (url, options = {}) => {
-  const res = await fetch(url, options);
+  const res = await fetch(url, {
+    ...options,
+    cache: 'no-store', // Disable caching for all API calls
+  });
   if (!res.ok) {
     let errorMessage = res.statusText;
     try {
@@ -16,25 +21,31 @@ const fetchApi = async (url, options = {}) => {
   return res.json();
 };
 
+const supabase = createClient();
+
 export const base44 = {
   auth: {
     me: async () => {
-      // Call our mock auth endpoint
-      return fetchApi('/api/auth/me');
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error || !user) throw new Error('Not authenticated');
+      // Map Supabase user to expected format if needed
+      return {
+        id: user.id,
+        email: user.email,
+        role: user.user_metadata?.role || 'admin' // Default to admin for initial setup
+      };
     },
-    login: async () => {
-      console.log('Login called - implementing mock login');
-      // Redirect or handle login flow
+    login: async (email, password) => {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       window.location.reload(); 
     },
     logout: async () => {
-      console.log('Logout called');
-      // In a real app, clear cookies/tokens
-      window.location.reload();
+      await supabase.auth.signOut();
+      window.location.href = '/login';
     },
     redirectToLogin: () => {
-      console.log('Redirect to login called');
-      // window.location.href = '/login'; // Or just let them proceed as mock admin
+      window.location.href = '/login';
     }
   },
   

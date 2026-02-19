@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { RotateCcw, Maximize2, Move } from 'lucide-react';
 
 // Create different tile geometries based on profile
@@ -327,68 +328,101 @@ export default function TileViewer3D({ config }) {
     const loadAndSetupTile = async () => {
       let tileGroup;
 
-      if (config.profile.id === 'new-england-slate') {
-        const loader = new STLLoader();
-        try {
-          const geometry = await new Promise((resolve, reject) => {
-            loader.load(
-              '/new_england_slate.STL',
-              resolve,
-              undefined,
-              reject
-            );
-          });
+      try {
+        if (config.profile.model_asset_path) {
+          const path = config.profile.model_asset_path;
+          const ext = path.split('.').pop().toLowerCase();
+          
+          if (ext === 'stl') {
+            const loader = new STLLoader();
+            const geometry = await loader.loadAsync(path);
+            
+            geometry.center();
+            geometry.computeBoundingBox();
+            const size = new THREE.Vector3();
+            geometry.boundingBox.getSize(size);
+            
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 1.8 / maxDim;
+            
+            const material = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.scale.set(scale, scale, scale);
+            mesh.rotation.x = -Math.PI / 2;
 
-          // Center the geometry
-          geometry.center();
+            tileGroup = new THREE.Group();
+            tileGroup.add(mesh);
+          } else if (ext === 'glb' || ext === 'gltf') {
+            const loader = new GLTFLoader();
+            const gltf = await loader.loadAsync(path);
+            const loadedScene = gltf.scene;
+            
+            const box = new THREE.Box3().setFromObject(loadedScene);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            
+            loadedScene.position.sub(center);
+            
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 1.8 / maxDim;
+            
+            loadedScene.scale.multiplyScalar(scale);
+            
+            tileGroup = new THREE.Group();
+            tileGroup.add(loadedScene);
+          }
+        }
+        
+        // Hardcoded fallback for existing asset
+        if (!tileGroup && config.profile.id === 'new-england-slate') {
+            const loader = new STLLoader();
+            const geometry = await loader.loadAsync('/new_england_slate.STL');
+            geometry.center();
+            geometry.computeBoundingBox();
+            const size = new THREE.Vector3();
+            geometry.boundingBox.getSize(size);
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 1.8 / maxDim;
+            
+            const material = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.scale.set(scale, scale, scale);
+            mesh.rotation.x = -Math.PI / 2;
 
-          // Compute bounding box to normalize scale
-          geometry.computeBoundingBox();
-          const bbox = geometry.boundingBox;
-          const size = new THREE.Vector3();
-          bbox.getSize(size);
-          
-          // Determine scale factor to fit within a ~1.8 unit box (matching other tiles)
-          const maxDim = Math.max(size.x, size.y, size.z);
-          const targetSize = 1.8;
-          const scale = targetSize / maxDim;
-          
-          // Create mesh
-          const material = new THREE.MeshStandardMaterial();
-          const mesh = new THREE.Mesh(geometry, material);
-          
-          // Apply normalized scale
-          mesh.scale.set(scale, scale, scale); 
-          
-          // Rotate if needed (STL often comes in with different axis orientation)
-          // Adjust rotation based on visual inspection. 
-          // If Y is up in STL, and Z is depth here...
-          mesh.rotation.x = -Math.PI / 2;
+            tileGroup = new THREE.Group();
+            tileGroup.add(mesh);
+        }
 
-          tileGroup = new THREE.Group();
-          tileGroup.add(mesh);
-        } catch (error) {
-          console.error('Error loading STL:', error);
-          // Fallback to procedural if STL fails
+        if (!tileGroup) {
           tileGroup = createTileGeometry(config.profile.id);
         }
-      } else {
+      } catch (error) {
+        console.error('Error loading tile model:', error);
         tileGroup = createTileGeometry(config.profile.id);
       }
 
       if (tileGroup) {
-        tileGroup.position.set(0, 0, 0); // Centered on platform
+        tileGroup.position.set(0, 0, 0);
         tileGroup.castShadow = true;
         tileGroup.receiveShadow = true;
 
-        // Apply color and texture to all meshes
         tileGroup.traverse((child) => {
-          if (child instanceof THREE.Mesh && child.material instanceof THREE.MeshStandardMaterial) {
-            applyTexture(child.material, config.texture?.id || 'standard', config.color?.hex_code || config.color?.hex || '#666666');
+          if (child.isMesh) {
             child.castShadow = true;
             child.receiveShadow = true;
-            // Ensure double-sided rendering for open meshes
-            child.material.side = THREE.DoubleSide;
+            if (child.material) {
+                // Ensure material is standard material so we can modify it
+                if (!(child.material instanceof THREE.MeshStandardMaterial)) {
+                    child.material = new THREE.MeshStandardMaterial({
+                        map: child.material.map,
+                        color: child.material.color
+                    });
+                }
+                child.material.side = THREE.DoubleSide;
+                applyTexture(child.material, config.texture?.id || 'standard', config.color?.hex_code || config.color?.hex || '#666666');
+            }
           }
         });
 

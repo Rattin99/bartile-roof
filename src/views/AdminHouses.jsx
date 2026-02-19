@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import { createPageUrl } from '@/utils';
 import { Plus, Edit, Trash2, ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { FileUploader } from '@/components/admin/FileUploader';
 
 export default function AdminHouses() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [houses, setHouses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingHouse, setEditingHouse] = useState(null);
@@ -33,10 +34,10 @@ export default function AdminHouses() {
     try {
       const user = await base44.auth.me();
       if (user.role !== 'admin') {
-        navigate(createPageUrl('TileConfigurator'));
+        router.push('/');
       }
     } catch {
-      base44.auth.redirectToLogin();
+      router.push('/login');
     }
   };
 
@@ -113,7 +114,7 @@ export default function AdminHouses() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => navigate(createPageUrl('Admin'))}
+                onClick={() => router.push('/admin')}
                 className="text-white/60 hover:text-white"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -220,24 +221,14 @@ export default function AdminHouses() {
 
             <div>
               <Label>Image URL *</Label>
-              <Input
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://..."
-                className="bg-white/5 border-white/10 text-white"
-              />
-              {formData.image_url && (
-                <div className="mt-3 rounded-lg overflow-hidden">
-                  <img 
-                    src={formData.image_url} 
-                    alt="Preview" 
-                    className="w-full h-40 object-cover"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                </div>
-              )}
+              <div className="mt-2">
+                <FileUploader 
+                    value={formData.image_url} 
+                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+                    accept=".jpg,.jpeg,.png,.webp"
+                    label="Upload House Image"
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
