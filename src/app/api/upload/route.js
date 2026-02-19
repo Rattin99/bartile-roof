@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { join, extname } from 'path';
+import { createClient } from '@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Allowed file types
 const ALLOWED_IMAGE_TYPES = ['.jpg', '.jpeg', '.png', '.webp', '.svg'];
@@ -15,11 +20,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
     const fileExtension = extname(file.name).toLowerCase();
-
-    let uploadSubDir = '';
     
+    let uploadSubDir = '';
     if (ALLOWED_IMAGE_TYPES.includes(fileExtension)) {
       uploadSubDir = 'images';
     } else if (ALLOWED_MODEL_TYPES.includes(fileExtension)) {
@@ -35,6 +38,52 @@ export async function POST(request) {
     const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filename = `${uniqueSuffix}-${safeName}`;
     
+    // Check for Supabase configuration
+    if (supabaseUrl && supabaseKey) {
+        try {
+            const supabase = createClient(supabaseUrl, supabaseKey);
+            const bucketName = 'uploads'; // Ensure this bucket exists and is public
+            const storagePath = `${uploadSubDir}/${filename}`;
+            
+            const buffer = Buffer.from(await file.arrayBuffer());
+            
+            const { data, error } = await supabase.storage
+                .from(bucketName)
+                .upload(storagePath, buffer, {
+                    contentType: file.type,
+                    upsert: false
+                });
+
+            if (error) {
+                console.error('Supabase Storage Error:', error);
+                throw new Error(`Storage Upload Failed: ${error.message}`);
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from(bucketName)
+                .getPublicUrl(storagePath);
+                
+            return NextResponse.json({ 
+                success: true, 
+                url: publicUrl,
+                filename: filename,
+                type: uploadSubDir
+            });
+        } catch (err) {
+             console.error('Supabase upload failed:', err);
+             // If we are in production and Supabase fails, we should fail.
+             if (process.env.NODE_ENV === 'production') {
+                throw err;
+             }
+        }
+    }
+
+    // Fallback to local filesystem (Only for local development)
+    if (process.env.NODE_ENV === 'production') {
+         throw new Error('Supabase credentials missing or upload failed. Cannot upload files to local filesystem in production.');
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
     const uploadDir = join(process.cwd(), 'public', 'uploads', uploadSubDir);
     
     // Ensure directory exists
