@@ -175,8 +175,13 @@ export default function TileViewer3D({ config }) {
   const tileRef = useRef(null);
   const animationRef = useRef(null);
   const [isRotating, setIsRotating] = useState(true);
+  const isRotatingRef = useRef(isRotating);
   const mouseDown = useRef(false);
   const mousePos = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    isRotatingRef.current = isRotating;
+  }, [isRotating]);
 
   useEffect(() => {
     if (!mountRef.current) return;
@@ -193,7 +198,7 @@ export default function TileViewer3D({ config }) {
       0.1,
       1000
     );
-    camera.position.set(0, 1.5, 4);
+    camera.position.set(0, 0, 4);
     camera.lookAt(0, 0, 0);
     cameraRef.current = camera;
 
@@ -227,7 +232,7 @@ export default function TileViewer3D({ config }) {
 
     // Grid/Platform
     const gridHelper = new THREE.GridHelper(4, 20, 0x333333, 0x1a1a1a);
-    gridHelper.position.y = -0.5;
+    gridHelper.position.y = -1.2;
     scene.add(gridHelper);
 
     // Platform for tile
@@ -238,7 +243,7 @@ export default function TileViewer3D({ config }) {
       metalness: 0.2
     });
     const platform = new THREE.Mesh(platformGeometry, platformMaterial);
-    platform.position.y = -0.5;
+    platform.position.y = -1.2;
     platform.receiveShadow = true;
     scene.add(platform);
 
@@ -280,7 +285,7 @@ export default function TileViewer3D({ config }) {
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);
       
-      if (tileRef.current && isRotating) {
+      if (tileRef.current && isRotatingRef.current) {
         tileRef.current.rotation.y += 0.005;
       }
       
@@ -442,8 +447,8 @@ export default function TileViewer3D({ config }) {
       tileRef.current.rotation.set(0, 0, 0);
     }
     if (cameraRef.current) {
-      cameraRef.current.position.set(2, 1.5, 3);
-      cameraRef.current.lookAt(0.6, 0, 0);
+      cameraRef.current.position.set(0, 0, 4);
+      cameraRef.current.lookAt(0, 0, 0);
     }
     setIsRotating(true);
   };

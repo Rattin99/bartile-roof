@@ -14,22 +14,11 @@ export default function ProfileSelector({ config, updateConfig }) {
     async function fetchProfiles() {
       try {
         const data = await base44.entities.TileProfile.list('sort_order');
-        setProfiles(data);
+        const activeProfiles = data.filter(p => p.is_active);
+        setProfiles(activeProfiles);
         
-        // Extract unique categories (assuming tags or a dedicated field, 
-        // but looking at schema TileProfile has name/description/assets. 
-        // We can use a naming convention or tags if we added them. 
-        // Let's assume tags for now or just group by name prefix if tags aren't there.)
-        // Actually, the previous hardcoded had categories like 'Slate', 'Split Timber'.
-        // Let's use a simple mapping or just "All Profiles" if no categories available.
-        
-        const cats = [...new Set(data.map(p => {
-          if (p.name.includes('Slate')) return 'Slate';
-          if (p.name.includes('Timber')) return 'Split Timber';
-          if (p.name.includes('Mission')) return 'Mission';
-          if (p.name.includes('European')) return 'Mediterranean';
-          return 'Other';
-        }))];
+        // Extract unique categories from the database field
+        const cats = [...new Set(activeProfiles.map(p => p.category || 'Other'))];
         setCategories(cats);
       } catch (error) {
         console.error('Failed to fetch profiles:', error);
@@ -43,10 +32,7 @@ export default function ProfileSelector({ config, updateConfig }) {
   const filteredProfiles = activeCategory === 'all' 
     ? profiles 
     : profiles.filter(p => {
-        const cat = p.name.includes('Slate') ? 'Slate' :
-                   p.name.includes('Timber') ? 'Split Timber' :
-                   p.name.includes('Mission') ? 'Mission' :
-                   p.name.includes('European') ? 'Mediterranean' : 'Other';
+        const cat = p.category || 'Other';
         return cat === activeCategory;
       });
 
@@ -98,10 +84,7 @@ export default function ProfileSelector({ config, updateConfig }) {
       <div className="space-y-3">
         {filteredProfiles.map((profile, index) => {
           const isSelected = config.profile?.id === profile.id;
-          const category = profile.name.includes('Slate') ? 'Slate' :
-                          profile.name.includes('Timber') ? 'Split Timber' :
-                          profile.name.includes('Mission') ? 'Mission' :
-                          profile.name.includes('European') ? 'Mediterranean' : 'Standard';
+          const category = profile.category || 'Standard';
           
           return (
             <motion.button

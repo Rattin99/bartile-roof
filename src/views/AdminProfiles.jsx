@@ -105,8 +105,15 @@ export default function AdminProfiles() {
 
   const handleSave = async () => {
     try {
+      if (!formData.profile_id?.trim() || !formData.name?.trim() || !formData.category) {
+        alert('Please fill in all required fields (Profile ID, Category, and Name).');
+        return;
+      }
+
       const cleanedData = {
         ...formData,
+        profile_id: formData.profile_id.trim(),
+        name: formData.name.trim(),
         features: formData.features.filter(f => f.trim())
       };
 
@@ -120,7 +127,7 @@ export default function AdminProfiles() {
       loadProfiles();
     } catch (error) {
       console.error('Failed to save profile:', error);
-      alert('Failed to save profile');
+      alert('Failed to save profile. Make sure the Profile ID is unique.');
     }
   };
 
