@@ -38,6 +38,7 @@ export default function AdminProfiles() {
     category: '',
     description: '',
     image_url: '',
+    icon_asset_path: '',
     features: [''],
     is_active: true,
     sort_order: 0
@@ -79,6 +80,7 @@ export default function AdminProfiles() {
       category: profile.category,
       description: profile.description || '',
       image_url: profile.image_url || '',
+      icon_asset_path: profile.icon_asset_path || '',
       model_asset_path: profile.model_asset_path || '',
       features: profile.features || [''],
       is_active: profile.is_active ?? true,
@@ -95,6 +97,7 @@ export default function AdminProfiles() {
       category: '',
       description: '',
       image_url: '',
+      icon_asset_path: '',
       model_asset_path: '',
       features: [''],
       is_active: true,
@@ -261,9 +264,9 @@ export default function AdminProfiles() {
                       </Button>
                     </div>
                   </div>
-                  {profile.image_url && (
+                  {(profile.icon_asset_path || profile.image_url) && (
                     <img
-                      src={profile.image_url}
+                      src={profile.icon_asset_path || profile.image_url}
                       alt={profile.name}
                       className="w-full h-32 object-cover rounded-lg mb-3"
                     />
@@ -344,13 +347,25 @@ export default function AdminProfiles() {
             </div>
 
             <div>
-              <Label>Profile Image</Label>
+              <Label>Thumbnail Image (Icon)</Label>
+              <div className="mt-2 mb-4">
+                <FileUploader 
+                    value={formData.icon_asset_path} 
+                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, icon_asset_path: url }))}
+                    accept=".jpg,.jpeg,.png,.webp"
+                    label="Upload Thumbnail"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label>Profile Image (Large)</Label>
               <div className="space-y-4 mt-2">
                   <FileUploader 
                       value={formData.image_url} 
                       onUploadComplete={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
                       accept=".jpg,.jpeg,.png,.webp"
-                      label="Upload Image"
+                      label="Upload Large Image"
                   />
                   
                   <div className="text-xs text-white/50 mb-2">Or select from defaults:</div>

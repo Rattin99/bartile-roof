@@ -103,7 +103,7 @@ export default function ProfileSelector({ config, updateConfig }) {
                 {/* Image */}
                 <div className="w-28 sm:w-36 h-28 sm:h-32 flex-shrink-0 overflow-hidden bg-white/5">
                   <img 
-                    src={profile.image_url || profile.icon_asset_path || '/tiles/legendary.jpeg'} 
+                    src={profile.icon_asset_path || profile.image_url || '/tiles/legendary.jpeg'} 
                     alt={profile.name}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
