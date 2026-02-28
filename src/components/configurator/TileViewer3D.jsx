@@ -247,26 +247,31 @@ export default function TileViewer3D({ config }) {
     platform.receiveShadow = true;
     scene.add(platform);
 
-    // Mouse controls
-    const handleMouseDown = (e) => {
+    // Mouse & Touch controls
+    const handleStart = (e) => {
       mouseDown.current = true;
-      mousePos.current = { x: e.clientX, y: e.clientY };
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      mousePos.current = { x: clientX, y: clientY };
       setIsRotating(false);
     };
 
-    const handleMouseMove = (e) => {
+    const handleMove = (e) => {
       if (!mouseDown.current || !tileRef.current) return;
       
-      const deltaX = e.clientX - mousePos.current.x;
-      const deltaY = e.clientY - mousePos.current.y;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      const deltaX = clientX - mousePos.current.x;
+      const deltaY = clientY - mousePos.current.y;
       
       tileRef.current.rotation.y += deltaX * 0.01;
       tileRef.current.rotation.x += deltaY * 0.01;
       
-      mousePos.current = { x: e.clientX, y: e.clientY };
+      mousePos.current = { x: clientX, y: clientY };
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       mouseDown.current = false;
     };
 
@@ -276,9 +281,13 @@ export default function TileViewer3D({ config }) {
       camera.position.z = Math.max(2, Math.min(6, camera.position.z + delta));
     };
 
-    renderer.domElement.addEventListener('mousedown', handleMouseDown);
-    renderer.domElement.addEventListener('mousemove', handleMouseMove);
-    renderer.domElement.addEventListener('mouseup', handleMouseUp);
+    renderer.domElement.addEventListener('mousedown', handleStart);
+    renderer.domElement.addEventListener('mousemove', handleMove);
+    renderer.domElement.addEventListener('mouseup', handleEnd);
+    renderer.domElement.addEventListener('mouseleave', handleEnd);
+    renderer.domElement.addEventListener('touchstart', handleStart, { passive: true });
+    renderer.domElement.addEventListener('touchmove', handleMove, { passive: true });
+    renderer.domElement.addEventListener('touchend', handleEnd);
     renderer.domElement.addEventListener('wheel', handleWheel, { passive: false });
 
     // Animation loop
@@ -305,9 +314,13 @@ export default function TileViewer3D({ config }) {
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
-      renderer.domElement.removeEventListener('mousedown', handleMouseDown);
-      renderer.domElement.removeEventListener('mousemove', handleMouseMove);
-      renderer.domElement.removeEventListener('mouseup', handleMouseUp);
+      renderer.domElement.removeEventListener('mousedown', handleStart);
+      renderer.domElement.removeEventListener('mousemove', handleMove);
+      renderer.domElement.removeEventListener('mouseup', handleEnd);
+      renderer.domElement.removeEventListener('mouseleave', handleEnd);
+      renderer.domElement.removeEventListener('touchstart', handleStart);
+      renderer.domElement.removeEventListener('touchmove', handleMove);
+      renderer.domElement.removeEventListener('touchend', handleEnd);
       renderer.domElement.removeEventListener('wheel', handleWheel);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);

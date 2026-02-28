@@ -60,7 +60,7 @@ export default function PreviewPanel({ config }) {
   );
 
   return (
-    <div className="h-[50vh] lg:h-full flex flex-col bg-[#0a0a0a]">
+    <div className="relative h-[50vh] lg:h-full flex flex-col bg-[#0a0a0a]">
       {/* View Mode Toggle */}
       <div className="absolute top-4 left-4 z-30 flex gap-2">
         <button
