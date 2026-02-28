@@ -59,6 +59,15 @@ export default function PreviewPanel({ config }) {
     (!config.texture || activeHouse.texture_id === config.texture.id)
   );
 
+  const filteredHouses = housePreviews.filter(house => {
+    const profileMatch = !house.profile_id || (config.profile && house.profile_id === config.profile.id);
+    const colorMatch = !house.color_id || (config.color && house.color_id === config.color.id);
+    const textureMatch = !house.texture_id || (config.texture && house.texture_id === config.texture.id);
+    return profileMatch && colorMatch && textureMatch;
+  });
+  
+  const displayHouses = filteredHouses.length > 0 ? filteredHouses : housePreviews;
+
   return (
     <div className="relative h-[50vh] lg:h-full flex flex-col bg-[#0a0a0a]">
       {/* View Mode Toggle */}
@@ -225,11 +234,11 @@ export default function PreviewPanel({ config }) {
       </div>
 
       {/* House Selector - Only show in house view */}
-      {viewMode === 'house' && housePreviews.length > 0 && (
+      {viewMode === 'house' && displayHouses.length > 0 && (
         <div className="bg-[#0f0f0f] border-t border-white/5 p-3 sm:p-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
             <span className="text-xs text-white/40 whitespace-nowrap mr-2">Preview on:</span>
-            {housePreviews.map((house) => (
+            {displayHouses.map((house) => (
               <button
                 key={house.id}
                 onClick={() => setActiveHouse(house)}

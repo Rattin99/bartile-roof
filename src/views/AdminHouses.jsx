@@ -6,6 +6,7 @@ import { Plus, Edit, Trash2, ArrowLeft, Save, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,9 @@ import { FileUploader } from '@/components/admin/FileUploader';
 export default function AdminHouses() {
   const router = useRouter();
   const [houses, setHouses] = useState([]);
+  const [profiles, setProfiles] = useState([]);
+  const [colors, setColors] = useState([]);
+  const [textures, setTextures] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingHouse, setEditingHouse] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -21,13 +25,16 @@ export default function AdminHouses() {
     house_id: '',
     name: '',
     image_url: '',
+    profile_id: '',
+    color_id: '',
+    texture_id: '',
     is_active: true,
     sort_order: 0
   });
 
   useEffect(() => {
     checkAuth();
-    loadHouses();
+    loadData();
   }, []);
 
   const checkAuth = async () => {
@@ -41,15 +48,32 @@ export default function AdminHouses() {
     }
   };
 
-  const loadHouses = async () => {
+  const loadData = async () => {
     setLoading(true);
+    try {
+      const [housesData, profilesData, colorsData, texturesData] = await Promise.all([
+        base44.entities.HousePreview.list('sort_order'),
+        base44.entities.TileProfile.list('sort_order'),
+        base44.entities.TileColor.list('sort_order'),
+        base44.entities.TileTexture.list('sort_order')
+      ]);
+      setHouses(housesData);
+      setProfiles(profilesData);
+      setColors(colorsData);
+      setTextures(texturesData);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadHouses = async () => {
     try {
       const data = await base44.entities.HousePreview.list('sort_order');
       setHouses(data);
     } catch (error) {
       console.error('Failed to load houses:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -59,6 +83,9 @@ export default function AdminHouses() {
       house_id: house.house_id,
       name: house.name,
       image_url: house.image_url,
+      profile_id: house.profile_id || '',
+      color_id: house.color_id || '',
+      texture_id: house.texture_id || '',
       is_active: house.is_active ?? true,
       sort_order: house.sort_order || 0
     });
@@ -71,6 +98,9 @@ export default function AdminHouses() {
       house_id: '',
       name: '',
       image_url: '',
+      profile_id: '',
+      color_id: '',
+      texture_id: '',
       is_active: true,
       sort_order: 0
     });
@@ -79,10 +109,16 @@ export default function AdminHouses() {
 
   const handleSave = async () => {
     try {
+      // Clean data before saving
+      const dataToSave = { ...formData };
+      if (!dataToSave.profile_id) dataToSave.profile_id = null;
+      if (!dataToSave.color_id) dataToSave.color_id = null;
+      if (!dataToSave.texture_id) dataToSave.texture_id = null;
+
       if (editingHouse) {
-        await base44.entities.HousePreview.update(editingHouse.id, formData);
+        await base44.entities.HousePreview.update(editingHouse.id, dataToSave);
       } else {
-        await base44.entities.HousePreview.create(formData);
+        await base44.entities.HousePreview.create(dataToSave);
       }
       
       setShowDialog(false);
@@ -193,7 +229,7 @@ export default function AdminHouses() {
 
       {/* Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
-        <DialogContent className="bg-[#1a1a1a] text-white border-white/10">
+        <DialogContent className="bg-[#1a1a1a] text-white border-white/10 max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingHouse ? 'Edit House Preview' : 'New House Preview'}</DialogTitle>
           </DialogHeader>
@@ -228,6 +264,53 @@ export default function AdminHouses() {
                     accept=".jpg,.jpeg,.png,.webp"
                     label="Upload House Image"
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <Label>Profile Match</Label>
+                <Select value={formData.profile_id} onValueChange={(v) => setFormData({ ...formData, profile_id: v === 'any' ? '' : v })}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white mt-1">
+                    <SelectValue placeholder="Any Profile" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Profile</SelectItem>
+                    {profiles.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Color Match</Label>
+                <Select value={formData.color_id} onValueChange={(v) => setFormData({ ...formData, color_id: v === 'any' ? '' : v })}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white mt-1">
+                    <SelectValue placeholder="Any Color" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Color</SelectItem>
+                    {colors.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Texture Match</Label>
+                <Select value={formData.texture_id} onValueChange={(v) => setFormData({ ...formData, texture_id: v === 'any' ? '' : v })}>
+                  <SelectTrigger className="bg-white/5 border-white/10 text-white mt-1">
+                    <SelectValue placeholder="Any Texture" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any Texture</SelectItem>
+                    {textures.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
