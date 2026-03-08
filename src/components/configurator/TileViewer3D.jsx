@@ -130,12 +130,37 @@ const createTileGeometry = (profileId) => {
   return group;
 };
 
+// Helper function to generate basic box-projection UVs for meshes that lack them
+const computeBoxUVs = (geometry) => {
+  geometry.computeBoundingBox();
+  const max = geometry.boundingBox.max;
+  const min = geometry.boundingBox.min;
+  const offset = new THREE.Vector2(0 - min.x, 0 - min.y);
+  const range = new THREE.Vector2(max.x - min.x, max.y - min.y);
+  const faces = geometry.attributes.position.count / 3;
+
+  const uvArray = new Float32Array(geometry.attributes.position.count * 2);
+
+  for (let i = 0; i < geometry.attributes.position.count; i++) {
+    const x = geometry.attributes.position.getX(i);
+    const y = geometry.attributes.position.getY(i);
+    // const z = geometry.attributes.position.getZ(i);
+
+    // Simple planar projection (XY plane)
+    uvArray[i * 2] = (x + offset.x) / range.x;
+    uvArray[i * 2 + 1] = (y + offset.y) / range.y;
+  }
+
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2));
+  geometry.attributes.uv.needsUpdate = true;
+};
+
 // Shared texture loader instance
 const textureLoader = new THREE.TextureLoader();
 
 // Apply texture based on the texture object from the database
 const applyTexture = (material, textureObj, color) => {
-  // Base color
+  // Base color - defaults to the selected hex color
   material.color = new THREE.Color(color || '#666666');
   material.roughness = 0.8;
   material.metalness = 0.05;
@@ -147,13 +172,48 @@ const applyTexture = (material, textureObj, color) => {
   }
 
   // Load the texture map image from the database object's map_asset_path
+  console.log('[TileViewer3D] applyTexture called with:', { textureObj, color });
   if (textureObj?.map_asset_path) {
-    textureLoader.load(textureObj.map_asset_path, (texture) => {
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      material.map = texture;
-      material.needsUpdate = true;
-    });
+    console.log('[TileViewer3D] Loading texture from:', textureObj.map_asset_path);
+    textureLoader.load(
+      textureObj.map_asset_path,
+      (texture) => {
+        console.log('[TileViewer3D] Texture loaded successfully');
+
+        // Ensure texture colors are correct in sRGB space
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+
+        // Scale the texture so it repeats nicely across the roof tile
+        texture.repeat.set(3, 3);
+
+        material.map = texture;
+
+        // Restore the user's selected color
+        material.color = new THREE.Color(color || '#666666');
+
+        // Remove transparency and use normal blending so the model is solid
+        material.blending = THREE.NormalBlending;
+        material.transparent = false;
+
+        // Fix for dark colors: use the texture as an emissive map so its pattern
+        // remains visible even when the base color is very dark. We tint the
+        // emissive output with the chosen color so it matches the theme.
+        material.emissive = new THREE.Color(color || '#666666');
+        material.emissiveIntensity = 0.4;
+        material.emissiveMap = texture;
+
+        material.needsUpdate = true;
+      },
+      undefined,
+      (error) => {
+        console.error('[TileViewer3D] Failed to load texture:', error);
+      }
+    );
+  } else {
+    console.log('[TileViewer3D] No map_asset_path found on texture object');
   }
 
   material.needsUpdate = true;
@@ -351,6 +411,12 @@ export default function TileViewer3D({ config }) {
             geometry.center();
             const processedGeometry = mergeVertices(geometry, 1e-3);
             processedGeometry.computeVertexNormals();
+
+            // Add automatic UV coordinates if missing
+            if (!processedGeometry.attributes.uv) {
+              computeBoxUVs(processedGeometry);
+            }
+
             processedGeometry.computeBoundingBox();
             const size = new THREE.Vector3();
             processedGeometry.boundingBox.getSize(size);
@@ -376,6 +442,15 @@ export default function TileViewer3D({ config }) {
 
             loadedScene.position.sub(center);
 
+            // Ensure child meshes have UVs
+            loadedScene.traverse((child) => {
+              if (child.isMesh && child.geometry && !child.geometry.attributes.uv) {
+                // If geometry is indexed, we can compute UVs directly or convert temporarily
+                const geo = child.geometry.isBufferGeometry ? child.geometry : new THREE.BufferGeometry().fromGeometry(child.geometry);
+                computeBoxUVs(geo);
+              }
+            });
+
             const size = new THREE.Vector3();
             box.getSize(size);
             const maxDim = Math.max(size.x, size.y, size.z);
@@ -395,6 +470,12 @@ export default function TileViewer3D({ config }) {
           geometry.center();
           const processedGeometry = mergeVertices(geometry, 1e-3);
           processedGeometry.computeVertexNormals();
+
+          // Add automatic UV coordinates if missing
+          if (!processedGeometry.attributes.uv) {
+            computeBoxUVs(processedGeometry);
+          }
+
           processedGeometry.computeBoundingBox();
           const size = new THREE.Vector3();
           processedGeometry.boundingBox.getSize(size);
