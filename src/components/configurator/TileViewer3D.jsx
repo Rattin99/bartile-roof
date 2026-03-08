@@ -3,13 +3,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils';
 import { RotateCcw, Maximize2, Move } from 'lucide-react';
 
 // Create different tile geometries based on profile
 const createTileGeometry = (profileId) => {
   const group = new THREE.Group();
   let geometry;
-  
+
   switch (profileId) {
     case 'legendary-slate':
     case 'yorkshire-slate': {
@@ -20,7 +21,7 @@ const createTileGeometry = (profileId) => {
       slateShape.lineTo(0.55, 0.9);
       slateShape.lineTo(-0.55, 0.9);
       slateShape.lineTo(-0.6, -0.9);
-      
+
       const extrudeSettings = {
         steps: 1,
         depth: 0.08,
@@ -29,11 +30,11 @@ const createTileGeometry = (profileId) => {
         bevelSize: 0.02,
         bevelSegments: 2
       };
-      
+
       geometry = new THREE.ExtrudeGeometry(slateShape, extrudeSettings);
       break;
     }
-      
+
     case 'legendary-split-timber':
     case 'split-timber':
     case 'yorkshire-split-timber': {
@@ -41,7 +42,7 @@ const createTileGeometry = (profileId) => {
       geometry = new THREE.BoxGeometry(1.2, 1.8, 0.12);
       break;
     }
-      
+
     case 'sierra-mission': {
       // Mission tile - high barrel S-curve
       const missionCurve = new THREE.CatmullRomCurve3([
@@ -51,7 +52,7 @@ const createTileGeometry = (profileId) => {
         new THREE.Vector3(0.3, 0, 0.12),
         new THREE.Vector3(0.6, 0, 0)
       ]);
-      
+
       const missionShape = new THREE.Shape();
       const points = missionCurve.getPoints(50);
       missionShape.moveTo(points[0].x, points[0].z);
@@ -59,56 +60,56 @@ const createTileGeometry = (profileId) => {
       missionShape.lineTo(0.6, -0.05);
       missionShape.lineTo(-0.6, -0.05);
       missionShape.lineTo(-0.6, 0);
-      
-      const extrudeGeometry = new THREE.ExtrudeGeometry(missionShape, { 
-        steps: 20, 
-        depth: 1.8, 
-        bevelEnabled: false 
+
+      const extrudeGeometry = new THREE.ExtrudeGeometry(missionShape, {
+        steps: 20,
+        depth: 1.8,
+        bevelEnabled: false
       });
       extrudeGeometry.rotateX(Math.PI / 2);
       extrudeGeometry.translate(0, 0, -0.9);
       geometry = extrudeGeometry;
       break;
     }
-      
+
     case 'european': {
       // European - double barrel
       const euroShape = new THREE.Shape();
       euroShape.moveTo(-0.6, 0);
-      
+
       // First barrel
-      for(let i=0; i<=20; i++) {
-        const x = -0.6 + (i/20) * 0.6;
-        const z = Math.sin((i/20) * Math.PI) * 0.15;
+      for (let i = 0; i <= 20; i++) {
+        const x = -0.6 + (i / 20) * 0.6;
+        const z = Math.sin((i / 20) * Math.PI) * 0.15;
         euroShape.lineTo(x, z);
       }
       // Second barrel
-      for(let i=0; i<=20; i++) {
-        const x = 0 + (i/20) * 0.6;
-        const z = Math.sin((i/20) * Math.PI) * 0.15;
+      for (let i = 0; i <= 20; i++) {
+        const x = 0 + (i / 20) * 0.6;
+        const z = Math.sin((i / 20) * Math.PI) * 0.15;
         euroShape.lineTo(x, z);
       }
-      
+
       euroShape.lineTo(0.6, -0.05);
       euroShape.lineTo(-0.6, -0.05);
       euroShape.lineTo(-0.6, 0);
-      
-      const extrudeGeometry = new THREE.ExtrudeGeometry(euroShape, { 
-        steps: 20, 
-        depth: 1.8, 
-        bevelEnabled: false 
+
+      const extrudeGeometry = new THREE.ExtrudeGeometry(euroShape, {
+        steps: 20,
+        depth: 1.8,
+        bevelEnabled: false
       });
       extrudeGeometry.rotateX(Math.PI / 2);
       extrudeGeometry.translate(0, 0, -0.9);
       geometry = extrudeGeometry;
       break;
     }
-      
+
     default: {
       geometry = new THREE.BoxGeometry(1.2, 1.8, 0.1);
     }
   }
-  
+
   if (geometry) {
     const mesh = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial());
     group.add(mesh);
@@ -125,46 +126,37 @@ const createTileGeometry = (profileId) => {
       }
     }
   }
-  
+
   return group;
 };
 
-// Apply texture based on selection
-const applyTexture = (material, textureId, color) => {
+// Shared texture loader instance
+const textureLoader = new THREE.TextureLoader();
+
+// Apply texture based on the texture object from the database
+const applyTexture = (material, textureObj, color) => {
   // Base color
   material.color = new THREE.Color(color || '#666666');
-  
-  // Texture modifications
-  switch (textureId) {
-    case 'vintage':
-      material.roughness = 0.95;
-      material.metalness = 0.1;
-      break;
-      
-    case 'swirl-brush':
-      material.roughness = 0.85;
-      material.metalness = 0.05;
-      break;
-      
-    case 'straight-brush':
-      material.roughness = 0.8;
-      material.metalness = 0.05;
-      break;
-      
-    case 'cobblestone':
-      material.roughness = 0.95;
-      material.metalness = 0;
-      break;
-      
-    case 'signature-slate':
-      material.roughness = 0.75;
-      material.metalness = 0.15;
-      break;
-      
-    default: // standard
-      material.roughness = 0.7;
-      material.metalness = 0.1;
+  material.roughness = 0.8;
+  material.metalness = 0.05;
+
+  // Dispose previous texture map if any
+  if (material.map) {
+    material.map.dispose();
+    material.map = null;
   }
+
+  // Load the texture map image from the database object's map_asset_path
+  if (textureObj?.map_asset_path) {
+    textureLoader.load(textureObj.map_asset_path, (texture) => {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      material.map = texture;
+      material.needsUpdate = true;
+    });
+  }
+
+  material.needsUpdate = true;
 };
 
 export default function TileViewer3D({ config }) {
@@ -195,8 +187,8 @@ export default function TileViewer3D({ config }) {
     const camera = new THREE.PerspectiveCamera(
       45,
       mountRef.current.clientWidth / mountRef.current.clientHeight,
-      0.1,
-      1000
+      0.5,
+      100
     );
     camera.position.set(0, 0, 4);
     camera.lookAt(0, 0, 0);
@@ -205,28 +197,29 @@ export default function TileViewer3D({ config }) {
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     mountRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    // Lights - Use strong ambient lighting to minimize per-face shading differences
+    // on dense CAD meshes (reduces Moiré artifacts)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
     directionalLight.position.set(5, 5, 5);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
     scene.add(directionalLight);
 
-    const fillLight = new THREE.DirectionalLight(0xc9a962, 0.3);
+    const fillLight = new THREE.DirectionalLight(0xc9a962, 0.15);
     fillLight.position.set(-3, 2, -3);
     scene.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.2);
     rimLight.position.set(0, 3, -5);
     scene.add(rimLight);
 
@@ -237,7 +230,7 @@ export default function TileViewer3D({ config }) {
 
     // Platform for tile
     const platformGeometry = new THREE.CylinderGeometry(1.5, 1.5, 0.05, 32);
-    const platformMaterial = new THREE.MeshStandardMaterial({ 
+    const platformMaterial = new THREE.MeshStandardMaterial({
       color: 0x1a1a1a,
       roughness: 0.8,
       metalness: 0.2
@@ -258,16 +251,16 @@ export default function TileViewer3D({ config }) {
 
     const handleMove = (e) => {
       if (!mouseDown.current || !tileRef.current) return;
-      
+
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      
+
       const deltaX = clientX - mousePos.current.x;
       const deltaY = clientY - mousePos.current.y;
-      
+
       tileRef.current.rotation.y += deltaX * 0.01;
       tileRef.current.rotation.x += deltaY * 0.01;
-      
+
       mousePos.current = { x: clientX, y: clientY };
     };
 
@@ -293,11 +286,11 @@ export default function TileViewer3D({ config }) {
     // Animation loop
     const animate = () => {
       animationRef.current = requestAnimationFrame(animate);
-      
+
       if (tileRef.current && isRotatingRef.current) {
         tileRef.current.rotation.y += 0.005;
       }
-      
+
       renderer.render(scene, camera);
     };
     animate();
@@ -350,21 +343,23 @@ export default function TileViewer3D({ config }) {
         if (config.profile.model_asset_path) {
           const path = config.profile.model_asset_path;
           const ext = path.split('.').pop().toLowerCase();
-          
+
           if (ext === 'stl') {
             const loader = new STLLoader();
             const geometry = await loader.loadAsync(path);
-            
+
             geometry.center();
-            geometry.computeBoundingBox();
+            const processedGeometry = mergeVertices(geometry, 1e-3);
+            processedGeometry.computeVertexNormals();
+            processedGeometry.computeBoundingBox();
             const size = new THREE.Vector3();
-            geometry.boundingBox.getSize(size);
-            
+            processedGeometry.boundingBox.getSize(size);
+
             const maxDim = Math.max(size.x, size.y, size.z);
             const scale = 1.8 / maxDim;
-            
-            const material = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geometry, material);
+
+            const material = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, flatShading: false });
+            const mesh = new THREE.Mesh(processedGeometry, material);
             mesh.scale.set(scale, scale, scale);
             mesh.rotation.x = -Math.PI / 2;
 
@@ -374,43 +369,45 @@ export default function TileViewer3D({ config }) {
             const loader = new GLTFLoader();
             const gltf = await loader.loadAsync(path);
             const loadedScene = gltf.scene;
-            
+
             const box = new THREE.Box3().setFromObject(loadedScene);
             const center = new THREE.Vector3();
             box.getCenter(center);
-            
+
             loadedScene.position.sub(center);
-            
+
             const size = new THREE.Vector3();
             box.getSize(size);
             const maxDim = Math.max(size.x, size.y, size.z);
             const scale = 1.8 / maxDim;
-            
+
             loadedScene.scale.multiplyScalar(scale);
-            
+
             tileGroup = new THREE.Group();
             tileGroup.add(loadedScene);
           }
         }
-        
+
         // Hardcoded fallback for existing asset
         if (!tileGroup && config.profile.id === 'new-england-slate') {
-            const loader = new STLLoader();
-            const geometry = await loader.loadAsync('/new_england_slate.STL');
-            geometry.center();
-            geometry.computeBoundingBox();
-            const size = new THREE.Vector3();
-            geometry.boundingBox.getSize(size);
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const scale = 1.8 / maxDim;
-            
-            const material = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.scale.set(scale, scale, scale);
-            mesh.rotation.x = -Math.PI / 2;
+          const loader = new STLLoader();
+          const geometry = await loader.loadAsync('/new_england_slate.STL');
+          geometry.center();
+          const processedGeometry = mergeVertices(geometry, 1e-3);
+          processedGeometry.computeVertexNormals();
+          processedGeometry.computeBoundingBox();
+          const size = new THREE.Vector3();
+          processedGeometry.boundingBox.getSize(size);
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 1.8 / maxDim;
 
-            tileGroup = new THREE.Group();
-            tileGroup.add(mesh);
+          const material = new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, flatShading: false });
+          const mesh = new THREE.Mesh(processedGeometry, material);
+          mesh.scale.set(scale, scale, scale);
+          mesh.rotation.x = -Math.PI / 2;
+
+          tileGroup = new THREE.Group();
+          tileGroup.add(mesh);
         }
 
         if (!tileGroup) {
@@ -431,22 +428,24 @@ export default function TileViewer3D({ config }) {
             child.castShadow = true;
             child.receiveShadow = true;
             if (child.material) {
-                // Ensure material is standard material so we can modify it
-                if (!(child.material instanceof THREE.MeshStandardMaterial)) {
-                    child.material = new THREE.MeshStandardMaterial({
-                        map: child.material.map,
-                        color: child.material.color
-                    });
-                }
-                child.material.side = THREE.DoubleSide;
-                applyTexture(child.material, config.texture?.id || 'standard', config.color?.hex_code || config.color?.hex || '#666666');
+              // For materials that aren't MeshStandardMaterial, convert them
+              // but preserve any existing normal maps
+              if (!(child.material instanceof THREE.MeshStandardMaterial)) {
+                child.material = new THREE.MeshStandardMaterial({
+                  map: child.material.map,
+                  normalMap: child.material.normalMap || null,
+                  color: child.material.color
+                });
+              }
+              child.material.side = THREE.DoubleSide;
+              applyTexture(child.material, config.texture, config.color?.hex_code || config.color?.hex || '#666666');
             }
           }
         });
 
         if (sceneRef.current) {
-           sceneRef.current.add(tileGroup);
-           tileRef.current = tileGroup;
+          sceneRef.current.add(tileGroup);
+          tileRef.current = tileGroup;
         }
       }
     };
@@ -473,16 +472,15 @@ export default function TileViewer3D({ config }) {
   return (
     <div className="relative w-full h-full">
       <div ref={mountRef} className="w-full h-full" />
-      
+
       {/* Controls Overlay */}
       <div className="absolute top-4 right-4 flex flex-col gap-2">
         <button
           onClick={toggleRotation}
-          className={`w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center transition-all ${
-            isRotating 
-              ? 'bg-[#c9a962]/20 text-[#c9a962] ring-1 ring-[#c9a962]/30' 
-              : 'bg-black/60 text-white/70 hover:text-white hover:bg-black/80'
-          }`}
+          className={`w-10 h-10 rounded-xl backdrop-blur-sm flex items-center justify-center transition-all ${isRotating
+            ? 'bg-[#c9a962]/20 text-[#c9a962] ring-1 ring-[#c9a962]/30'
+            : 'bg-black/60 text-white/70 hover:text-white hover:bg-black/80'
+            }`}
           title={isRotating ? 'Stop Auto-Rotation' : 'Start Auto-Rotation'}
         >
           <RotateCcw className={`w-4 h-4 ${isRotating ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
@@ -512,7 +510,7 @@ export default function TileViewer3D({ config }) {
           <div className="bg-black/80 backdrop-blur-xl rounded-xl p-3 border border-white/10 max-w-xs">
             <div className="flex items-center gap-3">
               {config.color && (
-                <div 
+                <div
                   className="w-10 h-10 rounded-lg flex-shrink-0"
                   style={{ backgroundColor: config.color.hex }}
                 />
