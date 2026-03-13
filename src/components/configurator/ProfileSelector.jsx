@@ -113,7 +113,7 @@ export default function ProfileSelector({ config, updateConfig }) {
                 <div className="flex-1 p-4 sm:p-5 text-left">
                   <div className="flex items-start justify-between mb-1">
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider text-[#c9a962]">
+                      <span className="text-[10px] uppercase tracking-wider text-white">
                         {category}
                       </span>
                       <h3 className="text-base sm:text-lg font-medium text-white">
