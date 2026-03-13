@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useRouter } from 'next/navigation';
-import { createPageUrl } from '@/utils';
-import { Plus, Edit, Trash2, ArrowLeft, Save } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useRouter } from "next/navigation";
+import { createPageUrl } from "@/utils";
+import { Plus, Edit, Trash2, ArrowLeft, Save } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminColors() {
   const router = useRouter();
@@ -16,10 +21,10 @@ export default function AdminColors() {
   const [editingColor, setEditingColor] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [formData, setFormData] = useState({
-    name: '',
-    hex_code: '#666666',
+    name: "",
+    hex_code: "#666666",
     is_standard: true,
-    sort_order: 0
+    sort_order: 0,
   });
 
   useEffect(() => {
@@ -30,21 +35,21 @@ export default function AdminColors() {
   const checkAuth = async () => {
     try {
       const user = await base44.auth.me();
-      if (user.role !== 'admin') {
-        router.push('/');
+      if (user.role !== "admin") {
+        router.push("/");
       }
     } catch {
-      router.push('/login');
+      router.push("/login");
     }
   };
 
   const loadColors = async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.TileColor.list('sort_order');
+      const data = await base44.entities.TileColor.list("sort_order");
       setColors(data);
     } catch (error) {
-      console.error('Failed to load colors:', error);
+      console.error("Failed to load colors:", error);
     } finally {
       setLoading(false);
     }
@@ -54,9 +59,9 @@ export default function AdminColors() {
     setEditingColor(color);
     setFormData({
       name: color.name,
-      hex_code: color.hex_code || color.hex || '#666666', // Fallback for old data or mismatch
+      hex_code: color.hex_code || color.hex || "#666666", // Fallback for old data or mismatch
       is_standard: color.is_standard ?? true,
-      sort_order: color.sort_order || 0
+      sort_order: color.sort_order || 0,
     });
     setShowDialog(true);
   };
@@ -64,10 +69,10 @@ export default function AdminColors() {
   const handleNew = () => {
     setEditingColor(null);
     setFormData({
-      name: '',
-      hex_code: '#666666',
+      name: "",
+      hex_code: "#666666",
       is_standard: true,
-      sort_order: 0
+      sort_order: 0,
     });
     setShowDialog(true);
   };
@@ -79,24 +84,24 @@ export default function AdminColors() {
       } else {
         await base44.entities.TileColor.create(formData);
       }
-      
+
       setShowDialog(false);
       loadColors();
     } catch (error) {
-      console.error('Failed to save color:', error);
-      alert('Failed to save color');
+      console.error("Failed to save color:", error);
+      alert("Failed to save color");
     }
   };
 
   const handleDelete = async (color) => {
     if (!confirm(`Are you sure you want to delete ${color.name}?`)) return;
-    
+
     try {
       await base44.entities.TileColor.delete(color.id);
       loadColors();
     } catch (error) {
-      console.error('Failed to delete color:', error);
-      alert('Failed to delete color');
+      console.error("Failed to delete color:", error);
+      alert("Failed to delete color");
     }
   };
 
@@ -109,8 +114,8 @@ export default function AdminColors() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => router.push('/admin')}
-                className="text-white/60 hover:text-white"
+                onClick={() => router.push("/admin")}
+                className="text-white/60 hover:text-black"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
@@ -143,8 +148,14 @@ export default function AdminColors() {
                 className="bg-white/5 border border-white/10 rounded-xl p-3 hover:bg-white/10 transition-all group"
               >
                 <div className="flex items-center justify-between mb-2">
-                  <Badge className={color.is_standard ? 'bg-blue-500/20 text-blue-400 text-xs' : 'bg-orange-500/20 text-orange-400 text-xs'}>
-                    {color.is_standard ? 'Standard' : 'Custom'}
+                  <Badge
+                    className={
+                      color.is_standard
+                        ? "bg-blue-500/20 text-blue-400 text-xs"
+                        : "bg-orange-500/20 text-orange-400 text-xs"
+                    }
+                  >
+                    {color.is_standard ? "Standard" : "Custom"}
                   </Badge>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button
@@ -165,14 +176,16 @@ export default function AdminColors() {
                     </Button>
                   </div>
                 </div>
-                
-                <div 
+
+                <div
                   className="aspect-square rounded-lg mb-3"
                   style={{ backgroundColor: color.hex_code || color.hex }}
                 />
-                
+
                 <div>
-                  <p className="text-sm font-medium text-white truncate">{color.name}</p>
+                  <p className="text-sm font-medium text-white truncate">
+                    {color.name}
+                  </p>
                 </div>
               </div>
             ))}
@@ -184,14 +197,18 @@ export default function AdminColors() {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="bg-[#1a1a1a] text-white border-white/10">
           <DialogHeader>
-            <DialogTitle>{editingColor ? 'Edit Color' : 'New Color'}</DialogTitle>
+            <DialogTitle>
+              {editingColor ? "Edit Color" : "New Color"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
               <Label>Name *</Label>
               <Input
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Charcoal"
                 className="bg-white/5 border-white/10 text-white"
               />
@@ -203,12 +220,16 @@ export default function AdminColors() {
                 <Input
                   type="color"
                   value={formData.hex_code}
-                  onChange={(e) => setFormData({ ...formData, hex_code: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, hex_code: e.target.value })
+                  }
                   className="w-20 h-10 bg-white/5 border-white/10"
                 />
                 <Input
                   value={formData.hex_code}
-                  onChange={(e) => setFormData({ ...formData, hex_code: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, hex_code: e.target.value })
+                  }
                   placeholder="#666666"
                   className="flex-1 bg-white/5 border-white/10 text-white"
                 />
@@ -221,7 +242,12 @@ export default function AdminColors() {
                 <Input
                   type="number"
                   value={formData.sort_order}
-                  onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      sort_order: parseInt(e.target.value),
+                    })
+                  }
                   className="bg-white/5 border-white/10 text-white"
                 />
               </div>
@@ -229,7 +255,9 @@ export default function AdminColors() {
                 <input
                   type="checkbox"
                   checked={formData.is_standard}
-                  onChange={(e) => setFormData({ ...formData, is_standard: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, is_standard: e.target.checked })
+                  }
                   className="w-4 h-4"
                 />
                 <Label>Standard</Label>
@@ -237,10 +265,17 @@ export default function AdminColors() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowDialog(false)} className="bg-white/5 border-white/10">
+              <Button
+                variant="outline"
+                onClick={() => setShowDialog(false)}
+                className="bg-white/5 border-white/10"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSave} className="bg-[#c9a962] hover:bg-[#b89952] text-[#0f0f0f]">
+              <Button
+                onClick={handleSave}
+                className="bg-[#c9a962] hover:bg-[#b89952] text-[#0f0f0f]"
+              >
                 <Save className="w-4 h-4 mr-2" />
                 Save
               </Button>
@@ -251,3 +286,4 @@ export default function AdminColors() {
     </div>
   );
 }
+

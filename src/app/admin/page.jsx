@@ -1,20 +1,26 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { base44 } from '@/api/base44Client';
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { 
-  Palette, 
-  Layers, 
-  Image as ImageIcon, 
-  Home, 
+import {
+  Palette,
+  Layers,
+  Image as ImageIcon,
+  Home,
   FileText,
   Settings,
   ArrowLeft,
-  LogOut
-} from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+  LogOut,
+} from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -25,7 +31,7 @@ export default function AdminDashboard() {
     colors: 0,
     textures: 0,
     houses: 0,
-    quotes: 0
+    quotes: 0,
   });
 
   useEffect(() => {
@@ -39,8 +45,8 @@ export default function AdminDashboard() {
       setIsAdmin(true); // For now, assume authorized if auth.me succeeds
       loadStats();
     } catch (error) {
-      console.error('Admin check failed:', error);
-      router.push('/'); 
+      console.error("Admin check failed:", error);
+      router.push("/");
     } finally {
       setLoading(false);
     }
@@ -55,7 +61,7 @@ export default function AdminDashboard() {
         base44.entities.TileColor.list(),
         base44.entities.TileTexture.list(),
         base44.entities.HousePreview.list(),
-        base44.entities.QuoteRequest.list()
+        base44.entities.QuoteRequest.list(),
       ]);
 
       setStats({
@@ -63,10 +69,10 @@ export default function AdminDashboard() {
         colors: colors.length,
         textures: textures.length,
         houses: houses.length,
-        quotes: quotes.length
+        quotes: quotes.length,
       });
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error("Failed to load stats:", error);
     }
   };
 
@@ -79,40 +85,40 @@ export default function AdminDashboard() {
   }
 
   const menuItems = [
-    { 
-      title: 'Tile Profiles', 
-      desc: 'Manage 3D models and profile options',
+    {
+      title: "Tile Profiles",
+      desc: "Manage 3D models and profile options",
       icon: <Layers className="w-6 h-6" />,
-      path: '/admin/profiles',
-      count: stats.profiles
+      path: "/admin/profiles",
+      count: stats.profiles,
     },
-    { 
-      title: 'Colors', 
-      desc: 'Manage available colors and swatches',
+    {
+      title: "Colors",
+      desc: "Manage available colors and swatches",
       icon: <Palette className="w-6 h-6" />,
-      path: '/admin/colors',
-      count: stats.colors
+      path: "/admin/colors",
+      count: stats.colors,
     },
-    { 
-      title: 'Textures', 
-      desc: 'Manage texture maps and finishes',
+    {
+      title: "Textures",
+      desc: "Manage texture maps and finishes",
       icon: <ImageIcon className="w-6 h-6" />,
-      path: '/admin/textures',
-      count: stats.textures
+      path: "/admin/textures",
+      count: stats.textures,
     },
-    { 
-      title: 'House Previews', 
-      desc: 'Manage inspiration gallery photos',
+    {
+      title: "House Previews",
+      desc: "Manage inspiration gallery photos",
       icon: <Home className="w-6 h-6" />,
-      path: '/admin/houses',
-      count: stats.houses
+      path: "/admin/houses",
+      count: stats.houses,
     },
-    { 
-      title: 'Quote Requests', 
-      desc: 'View and manage incoming leads',
+    {
+      title: "Quote Requests",
+      desc: "View and manage incoming leads",
       icon: <FileText className="w-6 h-6" />,
-      path: '/admin/quotes',
-      count: stats.quotes
+      path: "/admin/quotes",
+      count: stats.quotes,
     },
   ];
 
@@ -125,10 +131,16 @@ export default function AdminDashboard() {
               <Settings className="w-8 h-8" />
               Admin Dashboard
             </h1>
-            <p className="text-white/60 mt-2">Manage your Bartile Configurator content</p>
+            <p className="text-white/60 mt-2">
+              Manage your Bartile Configurator content
+            </p>
           </div>
           <div className="flex gap-4">
-            <Button variant="outline" onClick={() => router.push('/')} className="border-white/20 hover:bg-white/10">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/")}
+              className="border-white/20 text-black hover:bg-white/10 hover:text-white"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to App
             </Button>
@@ -141,7 +153,7 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {menuItems.map((item) => (
-            <Card 
+            <Card
               key={item.title}
               className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
               onClick={() => router.push(item.path)}
@@ -151,10 +163,16 @@ export default function AdminDashboard() {
                   <div className="p-2 bg-white/10 rounded-lg text-white">
                     {item.icon}
                   </div>
-                  <span className="text-2xl font-bold text-white/40">{item.count}</span>
+                  <span className="text-2xl font-bold text-white/40">
+                    {item.count}
+                  </span>
                 </div>
-                <CardTitle className="text-xl text-white mt-4">{item.title}</CardTitle>
-                <CardDescription className="text-white/60">{item.desc}</CardDescription>
+                <CardTitle className="text-xl text-white mt-4">
+                  {item.title}
+                </CardTitle>
+                <CardDescription className="text-white/60">
+                  {item.desc}
+                </CardDescription>
               </CardHeader>
             </Card>
           ))}

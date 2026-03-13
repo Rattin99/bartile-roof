@@ -1,29 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useRouter } from 'next/navigation';
-import { createPageUrl } from '@/utils';
-import { Plus, Edit, Trash2, ArrowLeft, Save, X, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
-import { FileUploader } from '@/components/admin/FileUploader';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useRouter } from "next/navigation";
+import { createPageUrl } from "@/utils";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  ArrowLeft,
+  Save,
+  X,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { FileUploader } from "@/components/admin/FileUploader";
+import { cn } from "@/lib/utils";
 
-const CATEGORIES = ['Slate', 'Split Timber', 'Mission', 'Mediterranean', 'Yorkshire'];
+const CATEGORIES = [
+  "Slate",
+  "Split Timber",
+  "Mission",
+  "Mediterranean",
+  "Yorkshire",
+];
 
 const TILE_IMAGES = [
-  { name: 'Legendary Slate', path: '/tiles/legendary.jpeg' },
-  { name: 'New England Slate', path: '/tiles/new_england.jpeg' },
-  { name: 'Legendary Split Timber', path: '/tiles/legendary_split_timber.jpeg' },
-  { name: 'Split Timber', path: '/tiles/split_timber.jpeg' },
-  { name: 'Sierra Mission', path: '/tiles/sierra_mission.jpeg' },
-  { name: 'European', path: '/tiles/european.jpeg' },
-  { name: 'Yorkshire', path: '/tiles/yorkshire.jpeg' },
+  { name: "Legendary Slate", path: "/tiles/legendary.jpeg" },
+  { name: "New England Slate", path: "/tiles/new_england.jpeg" },
+  {
+    name: "Legendary Split Timber",
+    path: "/tiles/legendary_split_timber.jpeg",
+  },
+  { name: "Split Timber", path: "/tiles/split_timber.jpeg" },
+  { name: "Sierra Mission", path: "/tiles/sierra_mission.jpeg" },
+  { name: "European", path: "/tiles/european.jpeg" },
+  { name: "Yorkshire", path: "/tiles/yorkshire.jpeg" },
 ];
 
 export default function AdminProfiles() {
@@ -33,15 +62,15 @@ export default function AdminProfiles() {
   const [editingProfile, setEditingProfile] = useState(null);
   const [showDialog, setShowDialog] = useState(false);
   const [formData, setFormData] = useState({
-    profile_id: '',
-    name: '',
-    category: '',
-    description: '',
-    image_url: '',
-    icon_asset_path: '',
-    features: [''],
+    profile_id: "",
+    name: "",
+    category: "",
+    description: "",
+    image_url: "",
+    icon_asset_path: "",
+    features: [""],
     is_active: true,
-    sort_order: 0
+    sort_order: 0,
   });
 
   useEffect(() => {
@@ -52,21 +81,21 @@ export default function AdminProfiles() {
   const checkAuth = async () => {
     try {
       const user = await base44.auth.me();
-      if (user.role !== 'admin') {
-        router.push('/');
+      if (user.role !== "admin") {
+        router.push("/");
       }
     } catch {
-      router.push('/login');
+      router.push("/login");
     }
   };
 
   const loadProfiles = async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.TileProfile.list('sort_order');
+      const data = await base44.entities.TileProfile.list("sort_order");
       setProfiles(data);
     } catch (error) {
-      console.error('Failed to load profiles:', error);
+      console.error("Failed to load profiles:", error);
     } finally {
       setLoading(false);
     }
@@ -78,13 +107,13 @@ export default function AdminProfiles() {
       profile_id: profile.profile_id,
       name: profile.name,
       category: profile.category,
-      description: profile.description || '',
-      image_url: profile.image_url || '',
-      icon_asset_path: profile.icon_asset_path || '',
-      model_asset_path: profile.model_asset_path || '',
-      features: profile.features || [''],
+      description: profile.description || "",
+      image_url: profile.image_url || "",
+      icon_asset_path: profile.icon_asset_path || "",
+      model_asset_path: profile.model_asset_path || "",
+      features: profile.features || [""],
       is_active: profile.is_active ?? true,
-      sort_order: profile.sort_order || 0
+      sort_order: profile.sort_order || 0,
     });
     setShowDialog(true);
   };
@@ -92,24 +121,30 @@ export default function AdminProfiles() {
   const handleNew = () => {
     setEditingProfile(null);
     setFormData({
-      profile_id: '',
-      name: '',
-      category: '',
-      description: '',
-      image_url: '',
-      icon_asset_path: '',
-      model_asset_path: '',
-      features: [''],
+      profile_id: "",
+      name: "",
+      category: "",
+      description: "",
+      image_url: "",
+      icon_asset_path: "",
+      model_asset_path: "",
+      features: [""],
       is_active: true,
-      sort_order: 0
+      sort_order: 0,
     });
     setShowDialog(true);
   };
 
   const handleSave = async () => {
     try {
-      if (!formData.profile_id?.trim() || !formData.name?.trim() || !formData.category) {
-        alert('Please fill in all required fields (Profile ID, Category, and Name).');
+      if (
+        !formData.profile_id?.trim() ||
+        !formData.name?.trim() ||
+        !formData.category
+      ) {
+        alert(
+          "Please fill in all required fields (Profile ID, Category, and Name).",
+        );
         return;
       }
 
@@ -117,35 +152,38 @@ export default function AdminProfiles() {
         ...formData,
         profile_id: formData.profile_id.trim(),
         name: formData.name.trim(),
-        features: formData.features.filter(f => f.trim())
+        features: formData.features.filter((f) => f.trim()),
       };
 
       if (editingProfile) {
-        await base44.entities.TileProfile.update(editingProfile.id, cleanedData);
+        await base44.entities.TileProfile.update(
+          editingProfile.id,
+          cleanedData,
+        );
       } else {
         await base44.entities.TileProfile.create(cleanedData);
       }
-      
+
       setShowDialog(false);
       loadProfiles();
     } catch (error) {
-      console.error('Failed to save profile:', error);
-      alert('Failed to save profile. Make sure the Profile ID is unique.');
+      console.error("Failed to save profile:", error);
+      alert("Failed to save profile. Make sure the Profile ID is unique.");
     }
   };
 
   const handleDelete = async (profile) => {
     if (!confirm(`Are you sure you want to delete ${profile.name}?`)) return;
-    
+
     try {
       // Optimistic update
-      setProfiles(prev => prev.filter(p => p.id !== profile.id));
-      
+      setProfiles((prev) => prev.filter((p) => p.id !== profile.id));
+
       await base44.entities.TileProfile.delete(profile.id);
       loadProfiles(); // Refresh to be sure
     } catch (error) {
-      console.error('Failed to delete profile:', error);
-      alert('Failed to delete profile');
+      console.error("Failed to delete profile:", error);
+      alert("Failed to delete profile");
       loadProfiles(); // Rollback by reloading
     }
   };
@@ -157,11 +195,14 @@ export default function AdminProfiles() {
   };
 
   const addFeature = () => {
-    setFormData({ ...formData, features: [...formData.features, ''] });
+    setFormData({ ...formData, features: [...formData.features, ""] });
   };
 
   const removeFeature = (index) => {
-    setFormData({ ...formData, features: formData.features.filter((_, i) => i !== index) });
+    setFormData({
+      ...formData,
+      features: formData.features.filter((_, i) => i !== index),
+    });
   };
 
   return (
@@ -173,44 +214,69 @@ export default function AdminProfiles() {
             <div className="flex items-center gap-4">
               <Button
                 variant="ghost"
-                onClick={() => router.push('/admin')}
-                className="text-white/60 hover:text-white"
+                onClick={() => router.push("/admin")}
+                className="text-white/60 hover:text-white hover:text-black"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               <div>
                 <h1 className="text-xl font-semibold">Tile Profiles</h1>
-                <p className="text-sm text-white/40">Manage tile profiles and categories</p>
+                <p className="text-sm text-white/40">
+                  Manage tile profiles and categories
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 onClick={async () => {
-                  if (!confirm('This will attempt to match existing profiles to local images. Continue?')) return;
+                  if (
+                    !confirm(
+                      "This will attempt to match existing profiles to local images. Continue?",
+                    )
+                  )
+                    return;
                   setLoading(true);
                   try {
                     for (const profile of profiles) {
-                      let imageUrl = '';
+                      let imageUrl = "";
                       const name = profile.name.toLowerCase();
-                      if (name.includes('legendary') && name.includes('slate')) imageUrl = '/tiles/legendary.jpeg';
-                      else if (name.includes('new england')) imageUrl = '/tiles/new_england.jpeg';
-                      else if (name.includes('legendary') && name.includes('split timber')) imageUrl = '/tiles/legendary_split_timber.jpeg';
-                      else if (name.includes('split timber')) imageUrl = '/tiles/split_timber.jpeg';
-                      else if (name.includes('mission') || name.includes('sierra')) imageUrl = '/tiles/sierra_mission.jpeg';
-                      else if (name.includes('european') || name.includes('mediterranean')) imageUrl = '/tiles/european.jpeg';
-                      else if (name.includes('yorkshire')) imageUrl = '/tiles/yorkshire.jpeg';
+                      if (name.includes("legendary") && name.includes("slate"))
+                        imageUrl = "/tiles/legendary.jpeg";
+                      else if (name.includes("new england"))
+                        imageUrl = "/tiles/new_england.jpeg";
+                      else if (
+                        name.includes("legendary") &&
+                        name.includes("split timber")
+                      )
+                        imageUrl = "/tiles/legendary_split_timber.jpeg";
+                      else if (name.includes("split timber"))
+                        imageUrl = "/tiles/split_timber.jpeg";
+                      else if (
+                        name.includes("mission") ||
+                        name.includes("sierra")
+                      )
+                        imageUrl = "/tiles/sierra_mission.jpeg";
+                      else if (
+                        name.includes("european") ||
+                        name.includes("mediterranean")
+                      )
+                        imageUrl = "/tiles/european.jpeg";
+                      else if (name.includes("yorkshire"))
+                        imageUrl = "/tiles/yorkshire.jpeg";
 
                       if (imageUrl && profile.image_url !== imageUrl) {
-                        await base44.entities.TileProfile.update(profile.id, { image_url: imageUrl });
+                        await base44.entities.TileProfile.update(profile.id, {
+                          image_url: imageUrl,
+                        });
                       }
                     }
                     await loadProfiles();
-                    alert('Images updated successfully');
+                    alert("Images updated successfully");
                   } catch (error) {
-                    console.error('Bulk update failed:', error);
-                    alert('Bulk update failed');
+                    console.error("Bulk update failed:", error);
+                    alert("Bulk update failed");
                   } finally {
                     setLoading(false);
                   }
@@ -241,9 +307,19 @@ export default function AdminProfiles() {
               <Card key={profile.id} className="bg-white/5 border-white/10">
                 <CardHeader>
                   <div className="flex items-start justify-between mb-3">
-                    <Badge className={profile.is_active ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
-                      {profile.is_active ? <Eye className="w-3 h-3 mr-1" /> : <EyeOff className="w-3 h-3 mr-1" />}
-                      {profile.is_active ? 'Active' : 'Hidden'}
+                    <Badge
+                      className={
+                        profile.is_active
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-red-500/20 text-red-400"
+                      }
+                    >
+                      {profile.is_active ? (
+                        <Eye className="w-3 h-3 mr-1" />
+                      ) : (
+                        <EyeOff className="w-3 h-3 mr-1" />
+                      )}
+                      {profile.is_active ? "Active" : "Hidden"}
                     </Badge>
                     <div className="flex gap-2">
                       <Button
@@ -272,14 +348,22 @@ export default function AdminProfiles() {
                     />
                   )}
                   <CardTitle className="text-white">{profile.name}</CardTitle>
-                  <Badge variant="outline" className="mt-2 w-fit">{profile.category}</Badge>
+                  <Badge variant="outline" className="mt-2 w-fit">
+                    {profile.category}
+                  </Badge>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-white/50 text-sm mb-3 line-clamp-2">{profile.description}</p>
+                  <p className="text-white/50 text-sm mb-3 line-clamp-2">
+                    {profile.description}
+                  </p>
                   {profile.features && profile.features.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {profile.features.slice(0, 3).map((feature, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs bg-white/5">
+                        <Badge
+                          key={i}
+                          variant="secondary"
+                          className="text-xs bg-white/5"
+                        >
                           {feature}
                         </Badge>
                       ))}
@@ -296,7 +380,9 @@ export default function AdminProfiles() {
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="bg-[#1a1a1a] text-white border-white/10 max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingProfile ? 'Edit Profile' : 'New Profile'}</DialogTitle>
+            <DialogTitle>
+              {editingProfile ? "Edit Profile" : "New Profile"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -304,7 +390,9 @@ export default function AdminProfiles() {
                 <Label>Profile ID *</Label>
                 <Input
                   value={formData.profile_id}
-                  onChange={(e) => setFormData({ ...formData, profile_id: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, profile_id: e.target.value })
+                  }
                   placeholder="legendary-slate"
                   className="bg-white/5 border-white/10 text-white"
                   disabled={!!editingProfile}
@@ -312,13 +400,20 @@ export default function AdminProfiles() {
               </div>
               <div>
                 <Label>Category *</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, category: value })
+                  }
+                >
                   <SelectTrigger className="bg-white/5 border-white/10 text-white">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -329,7 +424,9 @@ export default function AdminProfiles() {
               <Label>Name *</Label>
               <Input
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Legendary Slate"
                 className="bg-white/5 border-white/10 text-white"
               />
@@ -339,7 +436,9 @@ export default function AdminProfiles() {
               <Label>Description</Label>
               <Textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Describe the tile profile..."
                 rows={3}
                 className="bg-white/5 border-white/10 text-white"
@@ -349,11 +448,13 @@ export default function AdminProfiles() {
             <div>
               <Label>Thumbnail Image (Icon)</Label>
               <div className="mt-2 mb-4">
-                <FileUploader 
-                    value={formData.icon_asset_path} 
-                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, icon_asset_path: url }))}
-                    accept=".jpg,.jpeg,.png,.webp"
-                    label="Upload Thumbnail"
+                <FileUploader
+                  value={formData.icon_asset_path}
+                  onUploadComplete={(url) =>
+                    setFormData((prev) => ({ ...prev, icon_asset_path: url }))
+                  }
+                  accept=".jpg,.jpeg,.png,.webp"
+                  label="Upload Thumbnail"
                 />
               </div>
             </div>
@@ -361,43 +462,62 @@ export default function AdminProfiles() {
             <div>
               <Label>Profile Image (Large)</Label>
               <div className="space-y-4 mt-2">
-                  <FileUploader 
-                      value={formData.image_url} 
-                      onUploadComplete={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
-                      accept=".jpg,.jpeg,.png,.webp"
-                      label="Upload Large Image"
-                  />
-                  
-                  <div className="text-xs text-white/50 mb-2">Or select from defaults:</div>
-                  <div className="grid grid-cols-4 gap-2">
-                    {TILE_IMAGES.map((img) => (
-                      <button
-                        key={img.path}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, image_url: img.path }))}
-                        className={cn(
-                          "relative aspect-video rounded-md overflow-hidden border-2 transition-all",
-                          formData.image_url === img.path ? 'border-[#c9a962]' : 'border-transparent hover:border-white/20'
-                        )}
-                      >
-                        <img src={img.path} alt={img.name} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 flex items-end p-1">
-                          <span className="text-[8px] text-white truncate">{img.name}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                <FileUploader
+                  value={formData.image_url}
+                  onUploadComplete={(url) =>
+                    setFormData((prev) => ({ ...prev, image_url: url }))
+                  }
+                  accept=".jpg,.jpeg,.png,.webp"
+                  label="Upload Large Image"
+                />
+
+                <div className="text-xs text-white/50 mb-2">
+                  Or select from defaults:
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {TILE_IMAGES.map((img) => (
+                    <button
+                      key={img.path}
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          image_url: img.path,
+                        }))
+                      }
+                      className={cn(
+                        "relative aspect-video rounded-md overflow-hidden border-2 transition-all",
+                        formData.image_url === img.path
+                          ? "border-[#c9a962]"
+                          : "border-transparent hover:border-white/20",
+                      )}
+                    >
+                      <img
+                        src={img.path}
+                        alt={img.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-end p-1">
+                        <span className="text-[8px] text-white truncate">
+                          {img.name}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
             <div className="mt-4">
               <Label>3D Model (STL/GLB)</Label>
               <div className="mt-2">
-                <FileUploader 
-                    value={formData.model_asset_path} 
-                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, model_asset_path: url }))}
-                    accept=".stl,.glb,.gltf,.obj"
-                    label="Upload 3D Model"
+                <FileUploader
+                  value={formData.model_asset_path}
+                  onUploadComplete={(url) =>
+                    setFormData((prev) => ({ ...prev, model_asset_path: url }))
+                  }
+                  accept=".stl,.glb,.gltf,.obj"
+                  label="Upload 3D Model"
                 />
               </div>
             </div>
@@ -440,7 +560,12 @@ export default function AdminProfiles() {
                 <Input
                   type="number"
                   value={formData.sort_order}
-                  onChange={(e) => setFormData({ ...formData, sort_order: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      sort_order: parseInt(e.target.value),
+                    })
+                  }
                   className="bg-white/5 border-white/10 text-white"
                 />
               </div>
@@ -448,7 +573,9 @@ export default function AdminProfiles() {
                 <input
                   type="checkbox"
                   checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, is_active: e.target.checked })
+                  }
                   className="w-4 h-4"
                 />
                 <Label>Active</Label>
@@ -456,10 +583,17 @@ export default function AdminProfiles() {
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" onClick={() => setShowDialog(false)} className="bg-white/5 border-white/10">
+              <Button
+                variant="outline"
+                onClick={() => setShowDialog(false)}
+                className="bg-white/5 border-white/10"
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSave} className="bg-[#c9a962] hover:bg-[#b89952] text-[#0f0f0f]">
+              <Button
+                onClick={handleSave}
+                className="bg-[#c9a962] hover:bg-[#b89952] text-[#0f0f0f]"
+              >
                 <Save className="w-4 h-4 mr-2" />
                 Save
               </Button>

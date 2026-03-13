@@ -187,7 +187,7 @@ const applyTexture = (material, textureObj, color) => {
         texture.wrapT = THREE.RepeatWrapping;
 
         // Scale the texture so it repeats nicely across the roof tile
-        texture.repeat.set(3, 3);
+        texture.repeat.set(1, 1);
 
         material.map = texture;
 
@@ -587,7 +587,7 @@ export default function TileViewer3D({ config }) {
 
       {/* Config Info */}
       {config.profile && (
-        <div className="absolute top-4 left-4">
+        <div className="absolute bottom-4 left-4 z-20">
           <div className="bg-black/80 backdrop-blur-xl rounded-xl p-3 border border-white/10 max-w-xs">
             <div className="flex items-center gap-3">
               {config.color && (
